@@ -75,9 +75,9 @@ import * as three               from 'three';
     
 
         const materials = [
-            {name: 'Sphere A', color: '#3350ff'},
-            {name: 'Sphere B', color: '#00ffff'},
-            {name: 'Cube', color: '#ffffff'}
+            {name: 'Mat A', color: '#ffffffff'},
+            {name: 'Mat B', color: '#00ffff'},
+            {name: 'Mat C', color: '#ffffff'}
         ];
         // Uniforms 
         const uniforms = {
@@ -92,13 +92,13 @@ import * as three               from 'three';
             u_camToWorldMat:    { value: camera.matrixWorld },
             u_camInvProjMat:    { value: camera.projectionMatrixInverse },
 
-            u_diffIntensity:    { value: 0.5 },
+            u_diffIntensity:    { value: 5 },
             u_specIntensity:    { value: 3 },
             u_ambientIntensity: { value: 0.15 },
             u_shininess:        { value: 16 },
 
             u_lightColor:      { value: new three.Color(1, 1, 1) },
-            u_lightDir:        { value: new three.Vector3(0, 0, 1) },
+            u_lightDir:        { value: new three.Vector3(0.5, 0.65, 0.85) },
             u_maxMaterials:     { value: 8 },
             
             u_time:             { value: 0 },
@@ -111,7 +111,7 @@ import * as three               from 'three';
         };
 
 
-        const lightDir = {x: 0.5, y: 1, z: 0.5};
+        const lightDir = {x: 0.5, y: 0.65, z: 0.85};
 
         const syncLightDir = () => {
             uniforms.u_lightDir.value.set(lightDir.x, lightDir.y, lightDir.z).normalize();
@@ -129,7 +129,7 @@ import * as three               from 'three';
         marchFolder.add(uniforms.u_hitThresh, 'value', 0.00001, 0.01   ).name('Hit Threshold');
 
         const lightFolder = gui.addFolder('Lighting');
-        lightFolder.add(uniforms.u_diffIntensity,    'value', 0, 2,   0.01).name('Diffuse');
+        lightFolder.add(uniforms.u_diffIntensity,    'value', 0, 20,   0.01).name('Diffuse');
         lightFolder.add(uniforms.u_specIntensity,    'value', 0, 10,  0.1 ).name('Specular');
         lightFolder.add(uniforms.u_ambientIntensity, 'value', 0, 1,   0.01).name('Ambient');
         lightFolder.add(uniforms.u_shininess,        'value', 1, 128, 1   ).name('Shininess');

@@ -212,7 +212,14 @@ Surface map( vec3 pos ) {
     cube.color = u_matColors[0];
     cube.roughness = 0.9;
     cube.isMetal = false;
-    return cube;
+
+    Surface plane;
+    plane.dist = sdPlane(pos, vec4(0, 1, 0, 0.5));
+    plane.color = u_matColors[1];
+    plane.roughness = 0.5;
+    plane.isMetal = false;
+
+    return smUnion(cube, plane, 0.1);
 }
 
 
@@ -308,7 +315,8 @@ vec3 calcPBR(baseLight light, Surface mat, vec3 rayOrigin, vec3 hitPos, vec3 pos
     vec3 specularNominator = schlickFresnel(vDotH, mat) * ggxDistribution(nDotH, mat) * geomSmith(nDotV, nDotL, mat);
     float specularDenominator = 4.0 * nDotL * nDotV + 0.0001;
     vec3 specular = specularNominator / specularDenominator;
-    vec3 finalColor = (diffuse + specular) * lightIntensity * nDotL;
+    vec3 ambient = light.color * light.ambientIntensity * mat.color;
+    vec3 finalColor = ambient + (diffuse + specular) * lightIntensity * nDotL;
     return finalColor;
 }
 
