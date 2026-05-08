@@ -7,6 +7,7 @@ in vec2 vUv;
 
 // Uniforms
 uniform vec3 u_matColors[8];
+uniform float u_matRoughness[8];
 uniform vec3 u_clearColor;
 
 uniform float u_hitThresh;
@@ -207,20 +208,68 @@ Surface map( vec3 pos ) {
 
     // return final2;
     
-    Surface cube;
-    cube.dist = sdBox(pos, vec3(0.5));
-    cube.color = u_matColors[0];
-    cube.roughness = 0.9;
-    cube.isMetal = false;
 
-    Surface plane;
-    plane.dist = sdPlane(pos, vec4(0, 1, 0, 0.5));
-    plane.color = u_matColors[1];
-    plane.roughness = 0.5;
-    plane.isMetal = false;
+    // basic cube on a plane
 
-    return smUnion(cube, plane, 0.1);
+
+    // Surface cube;
+    // cube.dist = sdBox(pos, vec3(0.5));
+    // cube.color = u_matColors[0];
+    // cube.roughness = u_matRoughness[0];
+    // cube.isMetal = false;
+
+    // Surface plane;
+    // plane.dist = sdPlane(pos, vec4(0, 1, 0, 0.5));
+    // plane.color = u_matColors[1];
+    // plane.roughness = u_matRoughness[1];
+    // plane.isMetal = false;
+
+    // return smUnion(cube, plane, 0.1);
+
+    Surface sphere1;
+    sphere1.color = u_matColors[0];
+    sphere1.roughness = u_matRoughness[0];
+    sphere1.isMetal = false;
+
+    Surface sphere2;
+    sphere2.color = u_matColors[1];
+    sphere2.roughness = u_matRoughness[1];
+    sphere2.isMetal = false;
+
+    Surface sphere3;
+    sphere3.color = u_matColors[2];
+    sphere3.roughness = u_matRoughness[2];
+    sphere3.isMetal = false;
+
+    vec3 sphere1Pos = vec3(
+        -cos(u_time *0.7) - 0.3 * cos(u_time * 2.3),
+        -sin(u_time * 1.1) - 0.2 * sin(u_time * 3.1),
+        0.0
+    );
+
+    vec3 sphere2Pos = vec3(
+        cos(u_time * 1.1) + 0.3 * cos(u_time * 2.7),
+        sin(u_time * 1.0) + 0.2 * sin(u_time * 0.8),
+        0.0
+    );
+
+    vec3 sphere3Pos = vec3(
+        0.0,
+        0.0,
+        0.0
+    );
+    
+    sphere1.dist = sdSphere(pos - sphere1Pos, 0.5);
+
+    sphere2.dist = sdSphere(pos - sphere2Pos, 0.4);
+
+    sphere3.dist = sdSphere(pos - sphere3Pos, 0.3);
+
+    Surface final1 = smUnion(sphere1, sphere2, 0.5);
+    Surface final2 = smUnion(final1, sphere3, 0.5);
+    return final2;
 }
+
 
 
 // ***** ***** ***** Lighting & Marching ***** ***** *****

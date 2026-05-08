@@ -75,9 +75,9 @@ import * as three               from 'three';
     
 
         const materials = [
-            {name: 'Mat A', color: '#ffffffff'},
-            {name: 'Mat B', color: '#00ffff'},
-            {name: 'Mat C', color: '#ffffff'}
+            {name: 'Mat A', color: 'rgb(255, 0, 0)', roughness: 0.5},
+            {name: 'Mat B', color: 'rgb(0, 255, 0)', roughness: 0.5},
+            {name: 'Mat C', color: 'rgb(0, 0, 255)', roughness: 0.5}
         ];
         // Uniforms 
         const uniforms = {
@@ -110,6 +110,11 @@ import * as three               from 'three';
             )
         };
 
+        uniforms.u_matRoughness = {
+            value: Array.from({ length: uniforms.u_maxMaterials.value }, (_, i) =>
+                i < materials.length ? materials[i].roughness : 0
+            )
+        };
 
         const lightDir = {x: 0.5, y: 0.65, z: 0.85};
 
@@ -139,9 +144,8 @@ import * as three               from 'three';
 
         const matFolder = gui.addFolder('Materials');
         materials.forEach((mat, i) => {
-            matFolder.addColor(mat, 'color')
-            .name(mat.name)
-            .onChange(hex => uniforms.u_matColors.value[i].set(hex));
+            matFolder.addColor(mat, 'color').name(mat.name + ' Color').onChange(v => uniforms.u_matColors.value[i].set(v));
+            matFolder.add(mat, 'roughness', 0, 1, 0.01).name(mat.name + ' Roughness').onChange(v => uniforms.u_matRoughness.value[i] = v);
         });
 
         // Make the panel draggable by its title bar
