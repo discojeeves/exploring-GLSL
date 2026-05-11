@@ -148,8 +148,8 @@ import * as three               from 'three';
         const guiEl   = gui.domElement;
         const titleEl = guiEl.querySelector('.title');
         guiEl.style.position = 'fixed';
-        guiEl.style.top      = '0px';
-        guiEl.style.left     = (window.innerWidth - guiEl.offsetWidth - 16) + 'px';
+        guiEl.style.top      = (window.innerHeight / 2.0 - guiEl.offsetHeight / 2) + "px"; 
+        guiEl.style.left     =  (window.innerWidth - guiEl.offsetWidth - 16) + 'px'; 
         guiEl.style.right    = 'auto';
         titleEl.style.cursor = 'grab';
 
