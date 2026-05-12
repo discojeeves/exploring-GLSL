@@ -2,7 +2,11 @@ import * as three               from 'three';
         import { OrbitControls }        from '/node_modules/three/examples/jsm/controls/OrbitControls.js';
         import { PointerLockControls }  from '/node_modules/three/examples/jsm/controls/PointerLockControls.js';
         import GUI                      from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
-        
+        import Stats                    from '/node_modules/three/examples/jsm/libs/stats.module.js';
+
+        const stats = new Stats();
+        document.body.appendChild(stats.dom);
+
         //grab shaders from glsl files 
         const [vert, frag] = await Promise.all([
           fetch('/projects/vert.glsl').then(r => r.text()),
@@ -77,7 +81,9 @@ import * as three               from 'three';
         const materials = [
             {name: 'Mat A', color: 'rgb(255, 0, 0)', roughness: 0.5},
             {name: 'Mat B', color: 'rgb(0, 255, 0)', roughness: 0.5},
-            {name: 'Mat C', color: 'rgb(0, 0, 255)', roughness: 0.5}
+            {name: 'Mat C', color: 'rgb(0, 0, 255)', roughness: 0.5},
+            {name: 'Mat D', color: 'rgba(211, 211, 211, 1)', roughness: 0.5},
+            {name: 'Mat E', color: 'rgb(255, 0, 255)', roughness: 0.5}
         ];
         // Uniforms 
         const uniforms = {
@@ -127,7 +133,7 @@ import * as three               from 'three';
         camFolder.add(params, 'moveSpeed', 0.5, 20, 0.5).name('FPS Speed');
 
         const marchFolder = gui.addFolder('Raymarcher');
-        marchFolder.add(uniforms.u_maxSteps,  'value', 10,   500,  1   ).name('Max Steps');
+        marchFolder.add(uniforms.u_maxSteps,  'value', 10,   1000,  1   ).name('Max Steps');
         marchFolder.add(uniforms.u_maxDist,   'value', 10,   2000, 10  ).name('Max Distance');
         marchFolder.add(uniforms.u_hitThresh, 'value', 0.00001, 0.01   ).name('Hit Threshold');
 
@@ -208,6 +214,7 @@ import * as three               from 'three';
         const startTime = performance.now();
 
         function render() {
+            stats.begin();
             requestAnimationFrame(render);
             const delta = clock.getDelta();
 
@@ -223,6 +230,7 @@ import * as three               from 'three';
             }
             uniforms.u_time.value = (performance.now() - startTime) / 1000;
 
+            stats.end();
             renderer.render(scene, camera);
         }
         render();

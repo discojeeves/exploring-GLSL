@@ -227,7 +227,7 @@ Surface map( vec3 pos ) {
     Surface sphere1;
     sphere1.color = u_matColors[0];
     sphere1.roughness = u_matRoughness[0];
-    sphere1.isMetal = 0.0;
+    sphere1.isMetal = 1.0;
 
     Surface sphere2;
     sphere2.color = u_matColors[1];
@@ -263,9 +263,20 @@ Surface map( vec3 pos ) {
 
     sphere3.dist = sdSphere(pos - sphere3Pos, 0.3);
 
-    Surface final1 = smUnion(sphere1, sphere2, 0.5);
-    Surface final2 = smUnion(final1, sphere3, 0.5);
-    return final2;
+    Surface balls1 = smUnion(sphere1, sphere2, 0.5);
+    Surface balls2 = smUnion(balls1, sphere3, 0.5);
+
+    Surface ground;
+
+    ground.color = u_matColors[3];
+    ground.roughness = u_matRoughness[3];
+    ground.isMetal = 0.0;
+    ground.dist = sdPlane(pos, vec4(0, 1, 0, 1.8));
+
+
+    Surface other = ground;
+    Surface final = bsUnion(other, balls2);
+    return final;
 }
 
 
@@ -292,10 +303,26 @@ float rayMarch( vec3 rayOrigin, vec3 rayDir ) {
     return t;
 }
 
+float shadowMarch(vec3 hitPos, vec3 lightDir) {
+    float t = 0.001;
+    for (int i = 0; i < u_maxSteps; ++i) {
+        
+        vec3 pos = hitPos + lightDir * t;
+        
+        float dist = map(pos).dist;
+       
+        if (dist < u_hitThresh) return 0.0;
+        if (t > u_maxDist) break;
+        t += dist;
+    }
+    return 1.0;
+}
+
+
+
 // pbr 
 
 //Normal Distribution Function 
-
 float ggxDistribution(float nDotH, Surface mat){
     float alpha2 = mat.roughness * mat.roughness * mat.roughness * mat.roughness;
     float d = nDotH * nDotH * (alpha2 - 1.0) + 1.0;
@@ -304,7 +331,6 @@ float ggxDistribution(float nDotH, Surface mat){
 }
 
 //Smith geometry 
-
 float geomSmith(float nDotV, float nDotL, Surface mat){
 
     float k = (mat.roughness + 1.0) * (mat.roughness + 1.0) / 8.0; 
@@ -320,7 +346,6 @@ vec3 schlickFresnel(float vDotH, Surface mat){
     vec3 fresnel = F0 + (1.0 - F0) * pow((1.0 - vDotH), 5.0);
     return fresnel;
 }
-
 
 
 
@@ -362,9 +387,14 @@ vec3 calcPBR(baseLight light, Surface mat, vec3 rayOrigin, vec3 hitPos, vec3 pos
     float specularDenominator = 4.0 * nDotL * nDotV + 0.0001;
     vec3 specular = specularNominator / specularDenominator;
     vec3 ambient = light.color * light.ambientIntensity * mat.color;
-    vec3 finalColor = ambient + (diffuse + specular) * lightIntensity * nDotL;
+
+    float shadow = shadowMarch(hitPos, lightDir);
+
+    vec3 finalColor = ambient + (diffuse + specular) * lightIntensity * nDotL * shadow;
     return finalColor;
 }
+
+
 
 
 
