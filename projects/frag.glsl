@@ -159,71 +159,9 @@ mat2 degrot2D( float angle ) {
 }
 
 
-// ***** ***** ***** Scene ***** ***** *****
+// Scene Modules
 
-Surface map( vec3 pos ) {
-    // spheres and fractal cubes 
-    // vec3 sphereAPos = vec3(
-    //     -cos(u_time *0.7) - 0.3 * cos(u_time * 2.3),
-    //     -sin(u_time * 1.1) - 0.2 * sin(u_time * 3.1),
-    //     0.0
-    // );
-    // vec3 apos = pos;
-    // apos -= sphereAPos;
-    // Surface sphereA;
-    // sphereA.dist = sdSphere(apos, 0.5);
-    // sphereA.color = u_matColors[0];
-    // sphereA.roughness = 0.5;
-    // sphereA.isMetal = false;
-
-    // vec3 sphereBPos = vec3(
-    //     cos(u_time * 1.1) + 0.3 * cos(u_time * 2.7),
-    //     sin(u_time * 1.0) + 0.2 * sin(u_time * 0.8),
-    //     0.0
-    // );
-    // vec3 bpos = pos;
-    // bpos -= sphereBPos;
-
-
-    // Surface sphereB;
-    // sphereB.dist = sdSphere(bpos, 0.4);
-    // sphereB.color = u_matColors[1];
-    // sphereB.roughness = 0.5;
-    // sphereB.isMetal = false;
-
-    // vec3 cpos = fract(pos) - 0.5;
-    // float constraint = sdBox(pos, vec3(10.0));
-
-    // Surface box; 
-    // box.dist = bsInt(sdBox(cpos, vec3(0.1)), constraint);
-    // box.color = u_matColors[2];
-    // box.roughness = 0.5;
-    // box.isMetal = false;
-
-
-    // Surface final1 = smUnion(box, sphereA, 0.5);
-    // Surface final2 = smUnion(final1, sphereB, 0.5);
-
-    // return final2;
-    
-
-    // basic cube on a plane
-
-
-    // Surface cube;
-    // cube.dist = sdBox(pos, vec3(0.5));
-    // cube.color = u_matColors[0];
-    // cube.roughness = u_matRoughness[0];
-    // cube.isMetal = false;
-
-    // Surface plane;
-    // plane.dist = sdPlane(pos, vec4(0, 1, 0, 0.5));
-    // plane.color = u_matColors[1];
-    // plane.roughness = u_matRoughness[1];
-    // plane.isMetal = false;
-
-    // return smUnion(cube, plane, 0.1);
-
+Surface Balls( vec3 masterBallsPos, vec3 pos ) {
     Surface sphere1;
     sphere1.color = u_matColors[0];
     sphere1.roughness = u_matRoughness[0];
@@ -239,22 +177,23 @@ Surface map( vec3 pos ) {
     sphere3.roughness = u_matRoughness[2];
     sphere3.isMetal = 0.0;
 
+    
     vec3 sphere1Pos = vec3(
-        -cos(u_time *0.7) - 0.3 * cos(u_time * 2.3),
-        -sin(u_time * 1.1) - 0.2 * sin(u_time * 3.1),
-        0.0
+        masterBallsPos.x -cos(u_time *0.7) - 0.3 * cos(u_time * 2.3),
+        masterBallsPos.y -sin(u_time * 1.1) - 0.2 * sin(u_time * 3.1),
+        masterBallsPos.z
     );
 
     vec3 sphere2Pos = vec3(
-        cos(u_time * 1.1) + 0.3 * cos(u_time * 2.7),
-        sin(u_time * 1.0) + 0.2 * sin(u_time * 0.8),
-        0.0
+        masterBallsPos.x +cos(u_time * 1.1) + 0.3 * cos(u_time * 2.7),
+        masterBallsPos.y +sin(u_time * 1.0) + 0.2 * sin(u_time * 0.8),
+        masterBallsPos.z
     );
 
     vec3 sphere3Pos = vec3(
-        0.0,
-        0.0,
-        0.0
+        masterBallsPos.x,
+        masterBallsPos.y,
+        masterBallsPos.z
     );
     
     sphere1.dist = sdSphere(pos - sphere1Pos, 0.5);
@@ -264,8 +203,13 @@ Surface map( vec3 pos ) {
     sphere3.dist = sdSphere(pos - sphere3Pos, 0.3);
 
     Surface balls1 = smUnion(sphere1, sphere2, 0.5);
-    Surface balls2 = smUnion(balls1, sphere3, 0.5);
+    Surface ballsFinal = smUnion(balls1, sphere3, 0.5);
 
+    return ballsFinal;
+
+}
+
+Surface Ground( vec3 pos ) {
     Surface ground;
 
     ground.color = u_matColors[3];
@@ -273,11 +217,23 @@ Surface map( vec3 pos ) {
     ground.isMetal = 0.0;
     ground.dist = sdPlane(pos, vec4(0, 1, 0, 1.5));
 
-
-    Surface other = ground;
-    Surface final = bsUnion(other, balls2);
-    return final;
+    return ground;
 }
+
+Surface Pyramid(vec3 pos, vec3 offset, float height, float isMetal) {
+    Surface pyramid;
+
+    pyramid.color = u_matColors[4];
+    pyramid.roughness = u_matRoughness[4];
+    pyramid.isMetal = isMetal;
+    pyramid.dist = sdPyramid(pos - offset, height);
+
+    return pyramid;
+}
+
+// ***** ***** ***** Scene ***** ***** *****
+
+// [[SCENE_MAP]]
 
 
 

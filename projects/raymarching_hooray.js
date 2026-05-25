@@ -12,10 +12,8 @@ import * as three               from 'three';
 
         // Scene & Renderer setup
         const renderer = new three.WebGLRenderer({ antialias: true });
-
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
-        //renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1)); //alleged fix
         document.body.appendChild(renderer.domElement);
 
         const scene = new three.Scene();
@@ -27,7 +25,7 @@ import * as three               from 'three';
         light.position.set(1, 1, 1);
         scene.add(light);
 
-        // Camera
+        // Camera & Controls
         const camera = new three.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 5;
 
@@ -83,6 +81,7 @@ import * as three               from 'three';
             {name: 'Mat D', color: 'rgba(210, 210, 210, 1)', roughness: 0.5},
             {name: 'Mat E', color: 'rgb(255, 0, 255)', roughness: 0.5}
         ];
+
         // Uniforms 
         const uniforms = {
             u_hitThresh:        { value: 0.001 },
@@ -176,12 +175,34 @@ import * as three               from 'three';
         });
 
 
+        // Code Gen
+
+        const preamble = `
+        vec3 masterBallsPos = vec3(0.0, 1.0, 0.0);
+        vec3 pyramidOffset = vec3(1.0, -1.50, -1.0);
+        `;
+
+        const sceneObjects = [
+            { call : 'Ground(pos)' },
+            { call : 'Balls(masterBallsPos, pos)' },
+            { call : 'Pyramid(pos, pyramidOffset, 1.0, 1.0)' },
+        ];
+
+        const sceneBody = sceneObjects
+            .map((obj, i) => i === 0 
+            ? ` Surface result = ${obj.call};`
+            : ` result = bsUnion(result, ${obj.call});`)
+        .join('\n');
+        
+        const generatedScene = `Surface map(vec3 pos) {\n${preamble} ${sceneBody}\n return result;\n}`;
+
+        const patchedFrag = frag.replace('// [[SCENE_MAP]]', generatedScene);
 
         // Raymarching plane
         const geometry = new three.PlaneGeometry();
         const material = new three.ShaderMaterial({
             vertexShader:   vert,
-            fragmentShader: frag,
+            fragmentShader: patchedFrag,
             uniforms:       uniforms,
         });
 
