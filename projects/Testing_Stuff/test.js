@@ -3,25 +3,12 @@ import { OrbitControls }       from '/node_modules/three/examples/jsm/controls/O
 import { PointerLockControls } from '/node_modules/three/examples/jsm/controls/PointerLockControls.js';
 import GUI                     from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
 
-
-// ─── Config ───────────────────────────────────────────────────────────────────
-
-const materials = [
-    { name: 'Mat A', color: 'rgb(255, 0, 0)',         roughness: 0.5 },
-    { name: 'Mat B', color: 'rgb(0, 255, 0)',         roughness: 0.5 },
-    { name: 'Mat C', color: 'rgb(0, 0, 255)',         roughness: 0.5 },
-    { name: 'Mat D', color: 'rgba(210, 210, 210, 1)', roughness: 0.5 },
-    { name: 'Mat E', color: 'rgb(255, 0, 255)',       roughness: 0.5 },
-];
-
-
-
-// ─── Setup ────────────────────────────────────────────────────────────────────
+//————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
 async function loadShaders() {
     return Promise.all([
         fetch('/projects/vert.glsl').then(r => r.text()),
-        fetch('/projects/frag.glsl').then(r => r.text()),
+        fetch('/projects/Testing_Stuff/test_frag.glsl').then(r => r.text()),
     ]);
 }
 
@@ -128,10 +115,10 @@ function buildUniforms(camera, backgroundColor, materials) {
         u_lightDir:         { value: new three.Vector3(0.5, 0.65, 0.85) },
         u_maxMaterials:     { value: MAX_MATERIALS },
 
-        u_matColors:        { value: Array.from({ length: MAX_MATERIALS }, (_, i) =>
-                                i < materials.length ? new three.Color(materials[i].color) : new three.Color(0, 0, 0)) },
-        u_matRoughness:     { value: Array.from({ length: MAX_MATERIALS }, (_, i) =>
-                                i < materials.length ? materials[i].roughness : 0) },
+        // u_matColors:        { value: Array.from({ length: MAX_MATERIALS }, (_, i) =>
+        //                         i < materials.length ? new three.Color(materials[i].color) : new three.Color(0, 0, 0)) },
+        // u_matRoughness:     { value: Array.from({ length: MAX_MATERIALS }, (_, i) =>
+        //                         i < materials.length ? materials[i].roughness : 0) },
 
         u_time:             { value: 0 },
     };
@@ -139,11 +126,10 @@ function buildUniforms(camera, backgroundColor, materials) {
 
 function buildRaymarchPlane(camera, scene, vert, frag, uniforms) {
     const geometry = new three.PlaneGeometry();
-    const material = new three.ShaderMaterial({ vertexShader: vert, fragmentShader: frag, uniforms });
+    const material = new three.ShaderMaterial( { vertexShader : vert, fragmentShader: frag, uniforms } );
 
     const nearPlaneWidth  = camera.near * Math.tan(three.MathUtils.degToRad(camera.fov / 2)) * camera.aspect * 2;
     const nearPlaneHeight = nearPlaneWidth / camera.aspect;
-
     const plane = new three.Mesh(geometry, material);
     plane.position.set(0, 0, -camera.near);
     plane.scale.set(nearPlaneWidth, nearPlaneHeight, 1);
@@ -152,68 +138,12 @@ function buildRaymarchPlane(camera, scene, vert, frag, uniforms) {
     camera.add(plane);
 }
 
-function setupGUI(uniforms, materials) {
-    const gui = new GUI({ title: 'Controls' });
-
-    const lightDir = { x: 0.5, y: 0.65, z: 0.85 };
-    const syncLightDir = () => uniforms.u_lightDir.value.set(lightDir.x, lightDir.y, lightDir.z).normalize();
-
-    gui.addFolder('Camera')
-        .add({ moveSpeed: 5.0 }, 'moveSpeed', 0.5, 20, 0.5).name('FPS Speed');
-
-    const marchFolder = gui.addFolder('Raymarcher');
-    marchFolder.add(uniforms.u_maxSteps,  'value', 10,      1000,  1   ).name('Max Steps');
-    marchFolder.add(uniforms.u_maxDist,   'value', 10,      2000,  10  ).name('Max Distance');
-    marchFolder.add(uniforms.u_hitThresh, 'value', 0.00001, 0.01       ).name('Hit Threshold');
-
-    const lightFolder = gui.addFolder('Lighting');
-    lightFolder.add(uniforms.u_diffIntensity,    'value', 0, 20,  0.01).name('Diffuse');
-    lightFolder.add(uniforms.u_ambientIntensity, 'value', 0, 1,   0.01).name('Ambient');
-    lightFolder.add(lightDir, 'x', -1, 1, 0.01).name('Light X').onChange(syncLightDir);
-    lightFolder.add(lightDir, 'y', -1, 1, 0.01).name('Light Y').onChange(syncLightDir);
-    lightFolder.add(lightDir, 'z', -1, 1, 0.01).name('Light Z').onChange(syncLightDir);
-
-    const matFolder = gui.addFolder('Materials');
-    materials.forEach((mat, i) => {
-        matFolder.addColor(mat, 'color').name(mat.name + ' Color')
-            .onChange(v => uniforms.u_matColors.value[i].set(v));
-        matFolder.add(mat, 'roughness', 0, 1, 0.01).name(mat.name + ' Roughness')
-            .onChange(v => uniforms.u_matRoughness.value[i] = v);
-    });
-
-    makeDraggable(gui.domElement);
-}
-
-function makeDraggable(el) {
-    const titleEl = el.querySelector('.title');
-    el.style.position = 'fixed';
-    el.style.top      = (window.innerHeight / 2 - el.offsetHeight / 2) + 'px';
-    el.style.left     = (window.innerWidth - el.offsetWidth - 16) + 'px';
-    el.style.right    = 'auto';
-    titleEl.style.cursor = 'grab';
-
-    let dragging = false, dragOffX = 0, dragOffY = 0;
-
-    titleEl.addEventListener('mousedown', (e) => {
-        dragging = true;
-        const rect = el.getBoundingClientRect();
-        dragOffX = e.clientX - rect.left;
-        dragOffY = e.clientY - rect.top;
-        titleEl.style.cursor = 'grabbing';
-    });
-    document.addEventListener('mousemove', (e) => {
-        if (!dragging) return;
-        el.style.left = (e.clientX - dragOffX) + 'px';
-        el.style.top  = (e.clientY - dragOffY) + 'px';
-    });
-    document.addEventListener('mouseup', () => {
-        dragging = false;
-        titleEl.style.cursor = 'grab';
-    });
-}
 
 
-// ─── Render loop ──────────────────────────────────────────────────────────────
+
+
+
+
 
 function startRenderLoop(renderer, scene, camera, controls, uniforms) {
     const { orbit, fp, params, keys, isFirstPerson } = controls;
@@ -238,10 +168,8 @@ function startRenderLoop(renderer, scene, camera, controls, uniforms) {
         uniforms.u_time.value = (performance.now() - startTime) / 1000;
         renderer.render(scene, camera);
     }
-
     render();
 }
-
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -251,8 +179,7 @@ const renderer              = setupRenderer();
 const camera                = setupCamera();
 const { scene, backgroundColor } = setupScene(renderer);
 const controls              = setupControls(camera, renderer);
-const uniforms              = buildUniforms(camera, backgroundColor, materials);
+const uniforms              = buildUniforms(camera, backgroundColor);
 
 buildRaymarchPlane(camera, scene, vert, frag, uniforms);
-setupGUI(uniforms, materials);
 startRenderLoop(renderer, scene, camera, controls, uniforms);

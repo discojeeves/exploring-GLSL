@@ -6,8 +6,7 @@ precision highp float;
 in vec2 vUv;
 
 // Uniforms
-uniform vec3 u_matColors[8];
-uniform float u_matRoughness[8];
+
 uniform vec3 u_clearColor;
 
 uniform float u_hitThresh;
@@ -26,17 +25,15 @@ uniform float u_ambientIntensity;
 
 uniform float u_time;
 
-
 // ------ Surface struct ------
 // Carries distance + color through the scene. Add more fields here as needed.
 
 struct Surface {
-    float sdf;
+    float dist;
     vec3  color;
     float roughness;
     float isMetal; 
 };
-
 
 struct baseLight {
     vec3 color;
@@ -57,7 +54,6 @@ float sdBox( vec3 pos, vec3 dimensions) {
     vec3 q = abs(pos) - b;
     return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
-
 float sdTorus( vec3 pos, vec2 t ) {
     vec2 q = vec2(length(pos.xz) - t.x, pos.y);
     return length(q) - t.y;
@@ -96,6 +92,7 @@ float sdCapsule( vec3 pos, vec3 startPos, vec3 endPos, float radius ) {
   return length( pa - ba*h ) - radius;
 }
 
+
 // ------ Operators (float) ------
 // For composing distances only — e.g. rounding: sdBox(...) - 0.25
 
@@ -121,7 +118,7 @@ float smInt  ( float d1, float d2, float k ) {
 // Same operators but carry color through. Colors blend on smooth joins.
 
 Surface bsUnion( Surface a, Surface b ) {
-    if (a.sdf < b.sdf) {
+    if (a.dist < b.dist) {
         return a;
     } else {
         return b;
@@ -129,9 +126,9 @@ Surface bsUnion( Surface a, Surface b ) {
 }
 
 Surface bsSub( Surface a, Surface b ) {
-    if (-a.sdf > b.sdf) {
+    if (-a.dist > b.dist) {
         Surface result;
-        result.sdf = -a.sdf;
+        result.dist = -a.dist;
         result.color = a.color;
         result.roughness = a.roughness;
         result.isMetal = a.isMetal;
@@ -142,9 +139,9 @@ Surface bsSub( Surface a, Surface b ) {
 }
 
 Surface smUnion( Surface a, Surface b, float k ) {
-    float h = clamp(0.5 + 0.5*(b.sdf - a.sdf)/k, 0.0, 1.0);
+    float h = clamp(0.5 + 0.5*(b.dist - a.dist)/k, 0.0, 1.0);
     Surface final;
-    final.sdf = mix(b.sdf,  a.sdf,  h) - k*h*(1.0-h);
+    final.dist = mix(b.dist,  a.dist,  h) - k*h*(1.0-h);
     final.color = mix(b.color, a.color, h);
     final.roughness = mix(b.roughness, a.roughness, h);
     final.isMetal = mix(b.isMetal, a.isMetal, h);
@@ -169,20 +166,20 @@ mat2 degrot2D( float angle ) {
 
 // Scene Modules
 
-Surface balls( vec3 masterBallsPos, vec3 pos ) {
+Surface Balls( vec3 masterBallsPos, vec3 pos ) {
     Surface sphere1;
-    sphere1.color = u_matColors[0];
-    sphere1.roughness = u_matRoughness[0];
+    sphere1.color = vec3(0, 1, 0);
+    sphere1.roughness = 0.5;
     sphere1.isMetal = 0.0;
 
     Surface sphere2;
-    sphere2.color = u_matColors[1];
-    sphere2.roughness = u_matRoughness[1];
+    sphere2.color = vec3(0, 1, 0);
+    sphere2.roughness = 0.5;
     sphere2.isMetal = 0.0;
 
     Surface sphere3;
-    sphere3.color = u_matColors[2];
-    sphere3.roughness = u_matRoughness[2];
+    sphere3.color = vec3(0, 1, 0);
+    sphere3.roughness = 0.5;
     sphere3.isMetal = 0.0;
 
     
@@ -204,11 +201,11 @@ Surface balls( vec3 masterBallsPos, vec3 pos ) {
         masterBallsPos.z
     );
     
-    sphere1.sdf = sdSphere(pos - sphere1Pos, 0.5);
+    sphere1.dist = sdSphere(pos - sphere1Pos, 0.5);
 
-    sphere2.sdf = sdSphere(pos - sphere2Pos, 0.4);
+    sphere2.dist = sdSphere(pos - sphere2Pos, 0.4);
 
-    sphere3.sdf = sdSphere(pos - sphere3Pos, 0.3);
+    sphere3.dist = sdSphere(pos - sphere3Pos, 0.3);
 
     Surface balls1 = smUnion(sphere1, sphere2, 0.5);
     Surface ballsFinal = smUnion(balls1, sphere3, 0.5);
@@ -217,112 +214,42 @@ Surface balls( vec3 masterBallsPos, vec3 pos ) {
 
 }
 
-Surface arrow( vec3 pos, vec3 startPos, vec3 endPos, float headLength, float radius) {
-    float body = sdCapsule(pos, startPos, endPos, radius);
-
-
-
-}
-
-Surface origin( vec3 pos ) { 
-    Surface x;
-    Surface y;
-    Surface z;
-
-    vec3 a1 = vec3(-0.5, 0.0, 0.0);
-    vec3 b1 = vec3(0.5, 0.0, 0.0); 
-    x.sdf = sdCapsule(pos, a1, b1, 0.01);
-
-    vec3 a2 = vec3(0.0, -0.5, 0.0);
-    vec3 b2 = vec3(0.0, 0.5, 0.0);
-    y.sdf = sdCapsule(pos, a2, b2, 0.01);
-
-    vec3 a3 = vec3(0.0, 0.0, -0.5);
-    vec3 b3 = vec3(0.0, 0.0, 0.5);
-    z.sdf = sdCapsule(pos, a3, b3, 0.01);
-
-    x.color = vec3(1.0, 0.0, 0.0);
-    x.roughness = 0.5;
-    x.isMetal = 0.0;
-
-    y.color = vec3(0.0, 1.0, 0.0);
-    y.roughness = 0.5;
-    y.isMetal = 0.0;
-
-    z.color = vec3(0.0, 0.0, 1.0);
-    z.roughness = 0.5;
-    z.isMetal = 0.0;
-
-    Surface xy = bsUnion(x, y);
-    Surface result = bsUnion(xy, z);
-    return result;
-
-
-}
-
-Surface ground( vec3 pos ) {
+Surface Ground( vec3 pos ) {
     Surface ground;
 
-    ground.color = u_matColors[3];
-    ground.roughness = u_matRoughness[3];
+    ground.color = vec3(0.25, 0.25, 0.25);
+    ground.roughness = 0.5;
     ground.isMetal = 0.0;
-    ground.sdf = sdPlane(pos, vec4(0, 1, 0, 1.5));
+    ground.dist = sdPlane(pos, vec4(0, 1, 0, 1.5));
 
     return ground;
 }
 
-Surface pyramid(vec3 pos, vec3 offset, float height, float isMetal) {
+Surface Pyramid(vec3 pos, vec3 offset, float height, float isMetal) {
     Surface pyramid;
 
-    pyramid.color = u_matColors[4];
-    pyramid.roughness = u_matRoughness[4];
+    pyramid.color = vec3(0, 1, 0);
+    pyramid.roughness = 0.5;
     pyramid.isMetal = isMetal;
-    pyramid.sdf = sdPyramid(pos - offset, height);
+    pyramid.dist = sdPyramid(pos - offset, height);
 
     return pyramid;
 }
 
-Surface house( vec3 pos, vec3 housePos, vec3 dimensions, float roofHeight, float roofScale, float masterScale, vec3 wallColor, float wallRoughness, float wallMetal, vec3 roofColor, float RoofRoughness, float roofMetal, float wallThickness ) {
-
-    float wallCube = sdBox(pos, dimensions);
-
-
-    float interiorBool = sdBox(pos, dimensions - wallThickness); 
-
-    vec3 g = dimensions / 3.0;
-    vec3 h = pos;
-    float doorBool = sdBox(h + 2.0, g);
-
-    return Surface(interiorBool, wallColor, wallRoughness, wallMetal);
-
-
-    // return Surface(doorBool, wallColor, wallRoughness, wallMetal);
-
-    Surface walls = Surface(0.0, wallColor, wallRoughness, wallMetal );
-    walls.sdf = bsSub(interiorBool, wallCube);
-
-
-    
-    float wallHeight = dimensions.z / roofScale;
-
-    vec3 roofpos = pos / roofScale;
-    Surface roof;
-    roof.sdf = sdPyramid(vec3(roofpos.x, roofpos.y-wallHeight, roofpos.z), roofHeight);
-    roof.color = roofColor;
-    roof.roughness = RoofRoughness;
-    roof.isMetal = roofMetal;
-
-    return bsUnion(walls, roof);
-}
+// Surface House(vec3 pos, vec3 housePos, float wallHeight, float roofHeight,  )
 
 // ***** ***** ***** Scene ***** ***** *****
 
 Surface map(vec3 pos) {
-    vec3 masterBallsPos = vec3(0.0, 1.0, 0.0);
-    vec3 pyramidOffset  = vec3(1.0, -1.50, -1.0);
-    Surface result = ground(pos);
-    result = bsUnion(result, origin(pos));
-    return result;
+
+    float object = sdCapsule(pos, vec3(0.0, 0.0, 0.0), vec3(0.0, 0.01, 0.5), 0.1);
+   
+    Surface result = Surface(object, vec3(1.0, 0.0, 1.0), 0.5, 0.0);
+
+    Surface box = Surface(sdBox(pos, vec3(0.25)), vec3(1.0, 0.0, 0.0), 0.5, 0.0 );
+
+    result = bsUnion(result, box);
+    return bsUnion(Ground(pos), result);
 }
 
 
@@ -333,7 +260,7 @@ float rayMarch( vec3 rayOrigin, vec3 rayDir ) {
     float t = 0.0;
     for (int i = 0; i < u_maxSteps; ++i) {
         vec3 pos = rayOrigin + rayDir * t;
-        float d  = map(pos).sdf;
+        float d  = map(pos).dist;
         if (d < u_hitThresh || t > u_maxDist) break;
         t += d;
     }
@@ -346,7 +273,7 @@ float shadowMarch(vec3 hitPos, vec3 lightDir) {
         
         vec3 pos = hitPos + lightDir * t;
         
-        float dist = map(pos).sdf;
+        float dist = map(pos).dist;
        
         if (dist < 0.0001) return 0.0;
         if (t > 10.0) break;
@@ -363,9 +290,9 @@ float shadowMarch(vec3 hitPos, vec3 lightDir) {
 vec3 calcNormal( vec3 pos ) {
     float e = 0.0001;
     return normalize(vec3(
-        map(pos + vec3(e, 0, 0)).sdf - map(pos - vec3(e, 0, 0)).sdf,
-        map(pos + vec3(0, e, 0)).sdf - map(pos - vec3(0, e, 0)).sdf,
-        map(pos + vec3(0, 0, e)).sdf - map(pos - vec3(0, 0, e)).sdf
+        map(pos + vec3(e, 0, 0)).dist - map(pos - vec3(e, 0, 0)).dist,
+        map(pos + vec3(0, e, 0)).dist - map(pos - vec3(0, e, 0)).dist,
+        map(pos + vec3(0, 0, e)).dist - map(pos - vec3(0, 0, e)).dist
     ));
 }
 
