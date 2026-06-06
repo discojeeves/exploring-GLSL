@@ -8,7 +8,7 @@ import GUI                     from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+
 async function loadShaders() {
     return Promise.all([
         fetch('/projects/vert.glsl').then(r => r.text()),
-        fetch('/projects/Testing_Stuff/test_frag.glsl').then(r => r.text()),
+        fetch('test_frag.glsl').then(r => r.text()),
     ]);
 }
 

@@ -27,10 +27,11 @@ uniform float u_ambientIntensity;
 uniform float u_time;
 
 
-// ------ Surface struct ------
-// Carries distance + color through the scene. Add more fields here as needed.
+// ------ structs ------
 
-struct Surface {
+
+// Carries distance + material data through the scene
+struct surface {
     float sdf;
     vec3  color;
     float roughness;
@@ -117,10 +118,10 @@ float smInt  ( float d1, float d2, float k ) {
 }
 
 
-// ------ Operators (Surface) ------
+// ------ Operators (surface) ------
 // Same operators but carry color through. Colors blend on smooth joins.
 
-Surface bsUnion( Surface a, Surface b ) {
+surface bsUnion( surface a, surface b ) {
     if (a.sdf < b.sdf) {
         return a;
     } else {
@@ -128,9 +129,9 @@ Surface bsUnion( Surface a, Surface b ) {
     }
 }
 
-Surface bsSub( Surface a, Surface b ) {
+surface bsSub( surface a, surface b ) {
     if (-a.sdf > b.sdf) {
-        Surface result;
+        surface result;
         result.sdf = -a.sdf;
         result.color = a.color;
         result.roughness = a.roughness;
@@ -141,9 +142,9 @@ Surface bsSub( Surface a, Surface b ) {
     }
 }
 
-Surface smUnion( Surface a, Surface b, float k ) {
+surface smUnion( surface a, surface b, float k ) {
     float h = clamp(0.5 + 0.5*(b.sdf - a.sdf)/k, 0.0, 1.0);
-    Surface final;
+    surface final;
     final.sdf = mix(b.sdf,  a.sdf,  h) - k*h*(1.0-h);
     final.color = mix(b.color, a.color, h);
     final.roughness = mix(b.roughness, a.roughness, h);
@@ -169,39 +170,39 @@ mat2 degrot2D( float angle ) {
 
 // Scene Modules
 
-Surface balls( vec3 masterBallsPos, vec3 pos ) {
-    Surface sphere1;
+surface balls(vec3 pos,  vec3 masterPos ) {
+    surface sphere1;
     sphere1.color = u_matColors[0];
     sphere1.roughness = u_matRoughness[0];
     sphere1.isMetal = 0.0;
 
-    Surface sphere2;
+    surface sphere2;
     sphere2.color = u_matColors[1];
     sphere2.roughness = u_matRoughness[1];
     sphere2.isMetal = 0.0;
 
-    Surface sphere3;
+    surface sphere3;
     sphere3.color = u_matColors[2];
     sphere3.roughness = u_matRoughness[2];
     sphere3.isMetal = 0.0;
 
     
     vec3 sphere1Pos = vec3(
-        masterBallsPos.x -cos(u_time *0.7) - 0.3 * cos(u_time * 2.3),
-        masterBallsPos.y -sin(u_time * 1.1) - 0.2 * sin(u_time * 3.1),
-        masterBallsPos.z
+        masterPos.x -cos(u_time *0.7) - 0.3 * cos(u_time * 2.3),
+        masterPos.y -sin(u_time * 1.1) - 0.2 * sin(u_time * 3.1),
+        masterPos.z
     );
 
     vec3 sphere2Pos = vec3(
-        masterBallsPos.x +cos(u_time * 1.1) + 0.3 * cos(u_time * 2.7),
-        masterBallsPos.y +sin(u_time * 1.0) + 0.2 * sin(u_time * 0.8),
-        masterBallsPos.z
+        masterPos.x +cos(u_time * 1.1) + 0.3 * cos(u_time * 2.7),
+        masterPos.y +sin(u_time * 1.0) + 0.2 * sin(u_time * 0.8),
+        masterPos.z
     );
 
     vec3 sphere3Pos = vec3(
-        masterBallsPos.x,
-        masterBallsPos.y,
-        masterBallsPos.z
+        masterPos.x,
+        masterPos.y,
+        masterPos.z
     );
     
     sphere1.sdf = sdSphere(pos - sphere1Pos, 0.5);
@@ -210,24 +211,25 @@ Surface balls( vec3 masterBallsPos, vec3 pos ) {
 
     sphere3.sdf = sdSphere(pos - sphere3Pos, 0.3);
 
-    Surface balls1 = smUnion(sphere1, sphere2, 0.5);
-    Surface ballsFinal = smUnion(balls1, sphere3, 0.5);
+    surface balls1 = smUnion(sphere1, sphere2, 0.5);
+    surface ballsFinal = smUnion(balls1, sphere3, 0.5);
 
     return ballsFinal;
 
 }
 
-Surface arrow( vec3 pos, vec3 startPos, vec3 endPos, float headLength, float radius) {
-    float body = sdCapsule(pos, startPos, endPos, radius);
+// surface arrow( vec3 pos, vec3 startPos, vec3 endPos, float headLength, float radius) {
+//     float body = sdCapsule(pos, startPos, endPos, radius);
+
+    
 
 
+// }
 
-}
-
-Surface origin( vec3 pos ) { 
-    Surface x;
-    Surface y;
-    Surface z;
+surface origin( vec3 pos ) { 
+    surface x;
+    surface y;
+    surface z;
 
     vec3 a1 = vec3(-0.5, 0.0, 0.0);
     vec3 b1 = vec3(0.5, 0.0, 0.0); 
@@ -253,15 +255,15 @@ Surface origin( vec3 pos ) {
     z.roughness = 0.5;
     z.isMetal = 0.0;
 
-    Surface xy = bsUnion(x, y);
-    Surface result = bsUnion(xy, z);
+    surface xy = bsUnion(x, y);
+    surface result = bsUnion(xy, z);
     return result;
 
 
 }
 
-Surface ground( vec3 pos ) {
-    Surface ground;
+surface ground( vec3 pos ) {
+    surface ground;
 
     ground.color = u_matColors[3];
     ground.roughness = u_matRoughness[3];
@@ -271,8 +273,8 @@ Surface ground( vec3 pos ) {
     return ground;
 }
 
-Surface pyramid(vec3 pos, vec3 offset, float height, float isMetal) {
-    Surface pyramid;
+surface pyramid(vec3 pos, vec3 offset, float height, float isMetal) {
+    surface pyramid;
 
     pyramid.color = u_matColors[4];
     pyramid.roughness = u_matRoughness[4];
@@ -282,7 +284,7 @@ Surface pyramid(vec3 pos, vec3 offset, float height, float isMetal) {
     return pyramid;
 }
 
-Surface house( vec3 pos, vec3 housePos, vec3 dimensions, float roofHeight, float roofScale, float masterScale, vec3 wallColor, float wallRoughness, float wallMetal, vec3 roofColor, float RoofRoughness, float roofMetal, float wallThickness ) {
+surface house( vec3 pos, vec3 housePos, vec3 dimensions, float roofHeight, float roofScale, float masterScale, vec3 wallColor, float wallRoughness, float wallMetal, vec3 roofColor, float RoofRoughness, float roofMetal, float wallThickness ) {
 
     float wallCube = sdBox(pos, dimensions);
 
@@ -293,12 +295,12 @@ Surface house( vec3 pos, vec3 housePos, vec3 dimensions, float roofHeight, float
     vec3 h = pos;
     float doorBool = sdBox(h + 2.0, g);
 
-    return Surface(interiorBool, wallColor, wallRoughness, wallMetal);
+    return surface(interiorBool, wallColor, wallRoughness, wallMetal);
 
 
-    // return Surface(doorBool, wallColor, wallRoughness, wallMetal);
+    // return surface(doorBool, wallColor, wallRoughness, wallMetal);
 
-    Surface walls = Surface(0.0, wallColor, wallRoughness, wallMetal );
+    surface walls = surface(0.0, wallColor, wallRoughness, wallMetal );
     walls.sdf = bsSub(interiorBool, wallCube);
 
 
@@ -306,8 +308,8 @@ Surface house( vec3 pos, vec3 housePos, vec3 dimensions, float roofHeight, float
     float wallHeight = dimensions.z / roofScale;
 
     vec3 roofpos = pos / roofScale;
-    Surface roof;
-    roof.sdf = sdPyramid(vec3(roofpos.x, roofpos.y-wallHeight, roofpos.z), roofHeight);
+    surface roof;
+    roof.sdf = sdPyramid(vec3(roofpos.x, roofpos.y-wallHeight, roofpos.z), roofHeight) / roofScale;
     roof.color = roofColor;
     roof.roughness = RoofRoughness;
     roof.isMetal = roofMetal;
@@ -317,11 +319,14 @@ Surface house( vec3 pos, vec3 housePos, vec3 dimensions, float roofHeight, float
 
 // ***** ***** ***** Scene ***** ***** *****
 
-Surface map(vec3 pos) {
-    vec3 masterBallsPos = vec3(0.0, 1.0, 0.0);
-    vec3 pyramidOffset  = vec3(1.0, -1.50, -1.0);
-    Surface result = ground(pos);
-    result = bsUnion(result, origin(pos));
+surface map(vec3 pos) {
+
+    surface balls = balls(pos, vec3(0.0, 1.0, 0.0));
+
+    surface ground = ground(pos);
+
+    surface result = bsUnion(ground, balls);
+
     return result;
 }
 
@@ -371,7 +376,7 @@ vec3 calcNormal( vec3 pos ) {
 
 
 //Normal Distribution Function 
-float ggxDistribution(float nDotH, Surface mat){
+float ggxDistribution(float nDotH, surface mat){
     float alpha2 = mat.roughness * mat.roughness * mat.roughness * mat.roughness;
     float d = nDotH * nDotH * (alpha2 - 1.0) + 1.0;
     float ggxDistr = alpha2 / (PI * d * d);
@@ -380,7 +385,7 @@ float ggxDistribution(float nDotH, Surface mat){
 
 
 //Smith geometry 
-float geomSmith(float nDotV, float nDotL, Surface mat){
+float geomSmith(float nDotV, float nDotL, surface mat){
 
     float k = (mat.roughness + 1.0) * (mat.roughness + 1.0) / 8.0; 
     float gV = nDotV / ( nDotV * (1.0 - k) + k );
@@ -391,7 +396,7 @@ float geomSmith(float nDotV, float nDotL, Surface mat){
 
 
 //schlick fresnel 
-vec3 schlickFresnel(float vDotH, Surface mat){
+vec3 schlickFresnel(float vDotH, surface mat){
     vec3 F0 = mix(vec3(0.04), mat.color, mat.isMetal);
     vec3 fresnel = F0 + (1.0 - F0) * pow((1.0 - vDotH), 5.0);
     return fresnel;
@@ -400,7 +405,7 @@ vec3 schlickFresnel(float vDotH, Surface mat){
 
 
 //PBR Main 
-vec3 calcPBR(baseLight light, Surface mat, vec3 rayOrigin, vec3 hitPos, vec3 posDir, bool isDirLight){
+vec3 calcPBR(baseLight light, surface mat, vec3 rayOrigin, vec3 hitPos, vec3 posDir, bool isDirLight){
     
     vec3 lightIntensity = light.color * light.diffuseIntensity;
     vec3 l = vec3(0.0);
@@ -467,7 +472,7 @@ void main() {
         gl_FragColor = vec4(u_clearColor, 1.0);
     } else {
         vec3 hitPos = rayOrigin + rayDir * t;
-        Surface hit = map(hitPos);
+        surface hit = map(hitPos);
         vec3 color = calcPBR(light , hit, rayOrigin, hitPos, u_lightDir, true);
         gl_FragColor = vec4(color, 1.0);
        
