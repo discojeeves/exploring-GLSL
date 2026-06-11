@@ -20,8 +20,8 @@ const materials = [
 
 async function loadShaders() {
     return Promise.all([
-        fetch('/projects/vert.glsl').then(r => r.text()),
-        fetch('/projects/frag.glsl').then(r => r.text()),
+        fetch('/projects/basic_RM/vert.glsl').then(r => r.text()),
+        fetch('/projects/basic_RM/frag.glsl').then(r => r.text()),
     ]);
 }
 
