@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Raymarching Visualized</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <a id="back" href="../../index.html">← back</a>
+
+    <div id="info">
+        <div>step &nbsp;&nbsp;&nbsp;: <span id="i-step">—</span></div>
+        <div>SDF dist : <span id="i-dist">—</span></div>
+        <div>ray t &nbsp;&nbsp;: <span id="i-t">—</span></div>
+        <div id="i-status"></div>
+    </div>
+
+    <div id="controls">
+        <div class="row">
+            <button id="btn-prev">← prev</button>
+            <button id="btn-play">▶ play</button>
+            <button id="btn-next">next →</button>
+            <span id="step-counter">step — / —</span>
+        </div>
+        <div class="row">
+            <label>aim X</label>
+            <input type="range" id="aim-x" min="-5" max="5" step="0.01" value="0">
+            <span class="val" id="aim-x-val">0.00</span>
+        </div>
+        <div class="row">
+            <label>aim Y</label>
+            <input type="range" id="aim-y" min="-5" max="5" step="0.01" value="0">
+            <span class="val" id="aim-y-val">0.00</span>
+        </div>
+        <div class="legend">
+            <span><span class="dot" style="background:#ffff44"></span> current step</span>
+            <span><span class="dot" style="background:#2266cc"></span> past steps</span>
+            <span><span class="dot" style="background:#44ff44"></span> hit</span>
+            <span><span class="dot" style="background:#ff4444"></span> miss</span>
+            <span><span class="dot" style="background:#ff9900"></span> close</span>
+        </div>
+        <div id="hint">← → to step · space to play/pause · drag sliders to aim · orbit with mouse</div>
+    </div>
+
+    <script type="importmap">
+    { "imports": { "three": "/node_modules/three/build/three.module.js" } }
+    </script>
+    <script type="module" src="example.js"></script>
+</body>
+</html>
