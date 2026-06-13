@@ -29,7 +29,6 @@ uniform float u_time;
 
 // ------ structs ------
 
-
 // Carries distance + material data through the scene
 struct surface {
     float sdf;
@@ -43,10 +42,12 @@ struct baseLight {
     vec3 color;
     float diffuseIntensity; 
     float ambientIntensity; 
-};
+};/*
+------------------------*/
 
 
-// ------ Signed Distance Functions ------
+
+//--- Signed Distance Functions -------------------------------
 
 float sdSphere( vec3 pos, float r ) {
     return length(pos) - r;
@@ -95,9 +96,12 @@ float sdCapsule( vec3 pos, vec3 startPos, vec3 endPos, float radius ) {
   vec3 pa = pos - startPos, ba = endPos - startPos;
   float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
   return length( pa - ba*h ) - radius;
-}
+} /*
+-------------------------------------------------------------*/
 
-// ------ Operators (float) ------
+
+
+//--- Operators (float)         -------------------------------
 // For composing distances only — e.g. rounding: sdBox(...) - 0.25
 
 float bsUnion( float d1, float d2 )              { return min(d1, d2); }
@@ -115,10 +119,13 @@ float smSub  ( float d1, float d2, float k ) {
 float smInt  ( float d1, float d2, float k ) {
     float h = clamp(0.5 - 0.5*(d2-d1)/k, 0.0, 1.0);
     return mix(d2, d1, h) + k*h*(1.0-h);
-}
+}/*
+-------------------------------------------------------------*/
 
 
-// ------ Operators (surface) ------
+
+//--- Operators (surface)       -------------------------------
+
 // Same operators but carry color through. Colors blend on smooth joins.
 
 surface bsUnion( surface a, surface b ) {
@@ -150,11 +157,12 @@ surface smUnion( surface a, surface b, float k ) {
     final.roughness = mix(b.roughness, a.roughness, h);
     final.isMetal = mix(b.isMetal, a.isMetal, h);
     return final;
-}
+}/*
+-------------------------------------------------------------*/
 
 
 
-// ------ Rotation Helpers ------
+//--- Rotation Helpers          -------------------------------
 
 // radians
 mat2 rot2D( float angle ) {
@@ -165,11 +173,11 @@ mat2 rot2D( float angle ) {
 // degrees
 mat2 degrot2D( float angle ) {
     return rot2D(radians(angle));
-}
+}/*
+-------------------------------------------------------------*/
+    
 
-
-// Scene Modules
-
+//--- Scene Modules             -------------------------------
 surface balls(vec3 pos,  vec3 masterPos ) {
     surface sphere1;
     sphere1.color = u_matColors[0];
@@ -218,30 +226,45 @@ surface balls(vec3 pos,  vec3 masterPos ) {
 
 }
 
-// surface arrow( vec3 pos, vec3 startPos, vec3 endPos, float headLength, float radius) {
-//     float body = sdCapsule(pos, startPos, endPos, radius);
+float arrow( vec3 pos, vec3 startPos, vec3 endPos, float headLength, float headAngle, float radius) {
+    float body = sdCapsule(pos, startPos, endPos, radius);
+    vec3 g = pos;
+    g.y = abs(pos.y);
 
+   
+    float x2 = endPos.x - headLength * cos(radians(headAngle));
+    float y2 = endPos.y + headLength * sin(radians(headAngle));
+
+    vec3 headStartPos = vec3(x2, y2, endPos.z);
+
+    float head = sdCapsule(g, headStartPos, endPos, radius);
+
+    float arrow = bsUnion(body, head);
     
+    return arrow;
 
+}
 
-// }
-
-surface origin( vec3 pos ) { 
+surface origin( vec3 pos, float scale  ) { 
     surface x;
     surface y;
     surface z;
 
-    vec3 a1 = vec3(-0.5, 0.0, 0.0);
-    vec3 b1 = vec3(0.5, 0.0, 0.0); 
-    x.sdf = sdCapsule(pos, a1, b1, 0.01);
+    vec3 a = vec3(-0.5, 0.0, 0.0);
+    vec3 b = vec3(0.5, 0.0, 0.0); 
+    x.sdf = arrow(pos / scale, a, b, 0.25, 45.0, 0.05) * scale;
 
-    vec3 a2 = vec3(0.0, -0.5, 0.0);
-    vec3 b2 = vec3(0.0, 0.5, 0.0);
-    y.sdf = sdCapsule(pos, a2, b2, 0.01);
+    vec3 g = pos;
 
-    vec3 a3 = vec3(0.0, 0.0, -0.5);
-    vec3 b3 = vec3(0.0, 0.0, 0.5);
-    z.sdf = sdCapsule(pos, a3, b3, 0.01);
+    g.xy *= degrot2D(-90.0);
+
+    y.sdf = arrow(g, a, b, 0.25, 45.0, 0.05);
+
+    vec3 h = pos;
+
+    h.xz *= degrot2D(-90.0);
+    z.sdf = arrow(h, a, b, 0.25, 45.0, 0.05);
+
 
     x.color = vec3(1.0, 0.0, 0.0);
     x.roughness = 0.5;
@@ -315,24 +338,49 @@ surface house( vec3 pos, vec3 housePos, vec3 dimensions, float roofHeight, float
     roof.isMetal = roofMetal;
 
     return bsUnion(walls, roof);
-}
+}/*
+-------------------------------------------------------------*/
+
 
 // ***** ***** ***** Scene ***** ***** *****
 
 surface map(vec3 pos) {
 
-    surface balls = balls(pos, vec3(0.0, 1.0, 0.0));
+    // surface balls = balls(pos, vec3(0.0, 1.0, 0.0));
 
     surface ground = ground(pos);
 
-    surface result = bsUnion(ground, balls);
+    surface origin = origin(pos, 2.0);
 
+
+    surface result = bsUnion(ground, origin);
+
+    surface box; 
+    box.sdf = sdBox(pos - 1.0, vec3(0.75));
+    box.color = vec3(1.0);
+    box.roughness = 0.5;
+    box.isMetal = 0.0;
+
+    result = bsUnion(result, box);
+
+    
     return result;
+
+
+    // surface box;
+    // vec3 g = pos;
+    // g.x = abs(g.x);
+    // box.sdf = sdBox(g - vec3(2.0, 0.0, 0.0), vec3(0.75));
+    // box.color = vec3(0.5, 0.0, 0.8);
+    // box.roughness = 0.5;
+    // box.isMetal = 0.0;
+    // surface result0 = bsUnion(balls, ground);
+    // surface result1 = bsUnion(result0, box);
 }
 
 
 
-// ***** ***** ***** Marching ***** ***** *****
+// ***** Ray stuff *****
 
 float rayMarch( vec3 rayOrigin, vec3 rayDir ) {
     float t = 0.0;
@@ -347,14 +395,14 @@ float rayMarch( vec3 rayOrigin, vec3 rayDir ) {
 
 float shadowMarch(vec3 hitPos, vec3 lightDir) {
     float t = 0.001;
-    for (int i = 0; i < 128; ++i) {
+    for (int i = 0; i < 256; ++i) {
         
         vec3 pos = hitPos + lightDir * t;
         
         float dist = map(pos).sdf;
        
         if (dist < 0.0001) return 0.0;
-        if (t > 10.0) break;
+        if (t > 20.0) break;
         t += dist;
     }
     return 1.0;
@@ -362,7 +410,7 @@ float shadowMarch(vec3 hitPos, vec3 lightDir) {
 
 
 
-// ***** ***** ***** PBR etc ***** ***** *****
+// ***** ***** ***** PBR Shading ***** ***** *****
 
 //normal calculations
 vec3 calcNormal( vec3 pos ) {
@@ -374,7 +422,6 @@ vec3 calcNormal( vec3 pos ) {
     ));
 }
 
-
 //Normal Distribution Function 
 float ggxDistribution(float nDotH, surface mat){
     float alpha2 = mat.roughness * mat.roughness * mat.roughness * mat.roughness;
@@ -382,7 +429,6 @@ float ggxDistribution(float nDotH, surface mat){
     float ggxDistr = alpha2 / (PI * d * d);
     return ggxDistr; 
 }
-
 
 //Smith geometry 
 float geomSmith(float nDotV, float nDotL, surface mat){
@@ -394,7 +440,6 @@ float geomSmith(float nDotV, float nDotL, surface mat){
     return gV * gL;
 }
 
-
 //schlick fresnel 
 vec3 schlickFresnel(float vDotH, surface mat){
     vec3 F0 = mix(vec3(0.04), mat.color, mat.isMetal);
@@ -402,9 +447,7 @@ vec3 schlickFresnel(float vDotH, surface mat){
     return fresnel;
 }
 
-
-
-//PBR Main 
+//PBR Main Function
 vec3 calcPBR(baseLight light, surface mat, vec3 rayOrigin, vec3 hitPos, vec3 posDir, bool isDirLight){
     
     vec3 lightIntensity = light.color * light.diffuseIntensity;
@@ -449,6 +492,7 @@ vec3 calcPBR(baseLight light, surface mat, vec3 rayOrigin, vec3 hitPos, vec3 pos
     vec3 finalColor = ambient + (diffuse + specular) * lightIntensity * nDotL * shadow;
     return finalColor;
 }
+
 
 
 
