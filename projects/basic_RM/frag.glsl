@@ -250,20 +250,23 @@ surface origin( vec3 pos, float scale  ) {
     surface y;
     surface z;
 
-    vec3 a = vec3(-0.5, 0.0, 0.0);
-    vec3 b = vec3(0.5, 0.0, 0.0); 
-    x.sdf = arrow(pos / scale, a, b, 0.25, 45.0, 0.05) * scale;
+    vec3 a = vec3(-1.0, 0.0, 0.0);
+    vec3 b = vec3(1.0, 0.0, 0.0); 
+    float headLen = 0.5;
+    float headAngle = 35.0;
+    float radius = 0.04;
+    x.sdf = arrow(pos / scale, a, b, headLen, headAngle, radius) * scale;
 
     vec3 g = pos;
 
     g.xy *= degrot2D(-90.0);
 
-    y.sdf = arrow(g, a, b, 0.25, 45.0, 0.05);
+    y.sdf = arrow(g / scale, a, b, headLen, headAngle, radius) * scale;
 
     vec3 h = pos;
 
     h.xz *= degrot2D(-90.0);
-    z.sdf = arrow(h, a, b, 0.25, 45.0, 0.05);
+    z.sdf = arrow(h / scale, a, b, headLen, headAngle, radius) * scale;
 
 
     x.color = vec3(1.0, 0.0, 0.0);
@@ -346,36 +349,26 @@ surface house( vec3 pos, vec3 housePos, vec3 dimensions, float roofHeight, float
 
 surface map(vec3 pos) {
 
-    // surface balls = balls(pos, vec3(0.0, 1.0, 0.0));
-
     surface ground = ground(pos);
 
-    surface origin = origin(pos, 2.0);
+    surface origin = origin(pos, 1.0);
 
-
-    surface result = bsUnion(ground, origin);
+    surface defaultScene = bsUnion(ground, origin);
 
     surface box; 
-    box.sdf = sdBox(pos - 1.0, vec3(0.75));
+    box.sdf = sdBox(pos + 0.5, vec3(0.5));
     box.color = vec3(1.0);
     box.roughness = 0.5;
     box.isMetal = 0.0;
 
-    result = bsUnion(result, box);
+    surface result = bsUnion(defaultScene, box);
 
-    
-    return result;
+    surface balls = balls(pos, vec3(3.0, 0.0, 0.0));
+
+    result = bsUnion(result, balls);
+    return  ;
 
 
-    // surface box;
-    // vec3 g = pos;
-    // g.x = abs(g.x);
-    // box.sdf = sdBox(g - vec3(2.0, 0.0, 0.0), vec3(0.75));
-    // box.color = vec3(0.5, 0.0, 0.8);
-    // box.roughness = 0.5;
-    // box.isMetal = 0.0;
-    // surface result0 = bsUnion(balls, ground);
-    // surface result1 = bsUnion(result0, box);
 }
 
 

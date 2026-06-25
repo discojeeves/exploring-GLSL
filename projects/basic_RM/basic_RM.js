@@ -125,7 +125,7 @@ function buildUniforms(camera, backgroundColor, materials) {
         u_ambientIntensity: { value: 0.15 },
 
         u_lightColor:       { value: new three.Color(1, 1, 1) },
-        u_lightDir:         { value: new three.Vector3(0.5, 0.65, 0.85) },
+        u_lightDir:         { value: new three.Vector3(0.5, 0.5, 0.5) },
         u_maxMaterials:     { value: MAX_MATERIALS },
 
         u_matColors:        { value: Array.from({ length: MAX_MATERIALS }, (_, i) =>
@@ -155,7 +155,7 @@ function buildRaymarchPlane(camera, scene, vert, frag, uniforms) {
 function setupGUI(uniforms, materials) {
     const gui = new GUI({ title: 'Controls' });
 
-    const lightDir = { x: 0.5, y: 0.65, z: 0.85 };
+    const lightDir = { x: 0.5, y: 0.5, z: 0.5 };
     const syncLightDir = () => uniforms.u_lightDir.value.set(lightDir.x, lightDir.y, lightDir.z).normalize();
 
     gui.addFolder('Camera')
@@ -164,7 +164,7 @@ function setupGUI(uniforms, materials) {
     const marchFolder = gui.addFolder('Raymarcher');
     marchFolder.add(uniforms.u_maxSteps,  'value', 10,      1000,  1   ).name('Max Steps');
     marchFolder.add(uniforms.u_maxDist,   'value', 10,      2000,  10  ).name('Max Distance');
-    marchFolder.add(uniforms.u_hitThresh, 'value', 0.00001, 0.01       ).name('Hit Threshold');
+    marchFolder.add(uniforms.u_hitThresh, 'value', 0.00000001, 0.01       ).name('Hit Threshold');
 
     const lightFolder = gui.addFolder('Lighting');
     lightFolder.add(uniforms.u_diffIntensity,    'value', 0, 20,  0.01).name('Diffuse');
