@@ -3,30 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="assets/favicons/home.svg">
     <title>Portfolio</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <h1>My Projects </h1>
-        <p> hooray </p>
-
-        <!-- For .ico files (Most compatible) -->
-        <link rel="icon" type="image/x-icon" href="/.ico">
-        
-        <!-- OR for .png files -->
-        <!-- <link rel="icon" type="image/png" href="/images/favicon.png"> -->
-        
-        <!-- OR for .svg files -->
-        <!-- <link rel="icon" type="image/svg+xml" href="/favicon.svg"> -->
-        </header>
+    <h1>My Projects</h1>
+    <p>————————————————————————————————————————————————————————————————————————————————————————</p>
 
     <main class="grid">
-
         <!-- Raymarching Card -->
-        <a class="card" href="projects/basic_RM/basic_RM.html">
+        <a class="card" href="projects/basic-raymarching/index.html">
             <div class="card-preview">
-                <img src="projects/basic_RM/RM_preview.png" alt="placeholder" onerror="this.style.display='none'">
+                <img src="projects/basic-raymarching/preview.png" alt="placeholder" onerror="this.style.display='none'">
             </div>
             <div class="card-info">
                 <h2>Basic Raymarching</h2>
@@ -34,11 +23,29 @@
             </div>
         </a>
 
+        <!-- Fractal Card -->
+        <a class="card" href="projects/fractal/index.html">
+            <div class="card-preview">
+                <img src="projects/fractal_preview.png" alt="placeholder" onerror="this.style.display='none'">
+            </div>
+            <div class="card-info">
+                <h2>Fractal-ing it</h2>
+                <span class="tag">Raymarching</span> 
+
+            </div>
+        </a>
 
 
 
+
+
+    </main>
+
+    <h1>Other Stuff</h1>
+    <p>————————————————————————————————————————————————————————————————————————————————————————</p>
+    <main class="grid">
         <!-- Testing Card -->
-        <a class="card" href="testing/test.html">
+        <a class="card" href="testing/index.html">
             <div class="card-preview">
                 <img src="projects/testing_shader_preview.png" alt="placeholder" onerror="this.style.display='none'">
             </div>
@@ -50,7 +57,7 @@
         </a>
 
         <!-- Example Card -->
-        <a class="card" href="projects/RM_visualizer/visualizer.html">
+        <a class="card" href="projects/rm-visualizer/index.html">
             <div class="card-preview">
                 <img src="projects/example_preview.png" alt="placeholder" onerror="this.style.display='none'">
             </div>
@@ -60,9 +67,33 @@
 
             </div>
         </a>
-
-
-
     </main>
+    <h1>Resources</h1>
+    <p>————————————————————————————————————————————————————————————————————————————————————————</p>
+    <main class="grid">
+        <a class="card" href="https://iquilezles.org" target="_blank">
+            <div class="card-preview">
+                <img src="https://yt3.googleusercontent.com/ytc/AIdro_nbBSgh2qB22frEqrk4oAIMGAprXtifce1atwcAmLPZkQ=s900-c-k-c0x00ffffff-no-rj" 
+                style="width: 250px; height: 250px;" 
+                alt="placeholder" onerror="this.style.display='none'">
+            </div>
+            <div class = "card-info">
+                <h2>Inigo Quilez's Website</h2>
+                <span class="tag">Testing</span> 
+            </div>
+        </a>
+        <a class="grid">
+            <div class="card-preview">
+                <img src="projects/example_preview.png" alt="placeholder" onerror="this.style.display='none'">
+            </div>
+            <div class = "card-info">
+                <h2>Inigo Quilez's Website</h2>
+                <span class="tag">Testing</span> 
+            </div>
+        </a>
+    </main>
+    
+
+
 </body>
 </html>
