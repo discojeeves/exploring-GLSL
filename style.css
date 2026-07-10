@@ -1,3 +1,27 @@
+@font-face {
+    font-family: "Mondwest";
+    src: url("assets/fonts/PPMondwest-Regular.otf");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "NeueBit";
+    src: url("assets/fonts/NeueBit-Regular.woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "NeueBitBold";
+    src: url("assets/fonts/PPNeueBit-Bold.otf");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
 *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
@@ -7,21 +31,23 @@
 body {
     background: #0a0a0a;
     color: #e0e0e0;
-    font-family: monospace;
     padding: 2rem;
+    font-family: "NeueBit", monospace;
 }
 
 header {
     margin-bottom: 3rem;
 }
 
-header h1 {
+h1 {
     font-size: 2rem;
     font-weight: normal;
+    letter-spacing: 0.1rem;
+    text-transform: uppercase;
     margin-bottom: 0.4rem;
 }
 
-header p {
+p {
     color: #888;
 }
 
