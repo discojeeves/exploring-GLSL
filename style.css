@@ -65,7 +65,13 @@ p {
     color: inherit;
     overflow: hidden;
     transition: border-color 0.2s;
+
 }
+
+.card.is-resetting {
+    transition: transform 0.4s ease;
+}
+
 
 .card:hover {
     border-color: #555;
