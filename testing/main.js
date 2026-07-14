@@ -1,6 +1,6 @@
 import * as three              from 'three';
-import { OrbitControls }       from '/node_modules/three/examples/jsm/controls/OrbitControls.js';
-import { PointerLockControls } from '/node_modules/three/examples/jsm/controls/PointerLockControls.js';
+import { OrbitControls }       from 'three/addons/controls/OrbitControls.js';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import GUI                     from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
 
 //————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
