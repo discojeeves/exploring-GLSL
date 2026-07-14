@@ -366,7 +366,7 @@ surface map(vec3 pos) {
     surface balls = balls(pos, vec3(3.0, 0.0, 0.0));
 
     result = bsUnion(result, balls);
-    return  ;
+    return result;
 
 
 }
