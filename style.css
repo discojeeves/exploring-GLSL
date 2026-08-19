@@ -64,7 +64,7 @@ h1 {
     margin-bottom: 0.4rem;
     transform: scale(1.4, 0.8); 
     transform-origin: left;
-
+    max-width: max-content;
 }
 
 p {
