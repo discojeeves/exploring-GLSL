@@ -3,92 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <style>
-    html {
-        background: #0a0a0a; 
-    }
-    </style>
-
     <title>wb — Projects</title>
+
     <link rel="icon" href="assets/favicons/home.svg">
     <link rel="stylesheet" href="style.css">
 </head>
-<body id="bob">
-    <canvas id="gl-canvas"></canvas>
-    <h1>my projects</h1>
-    <p>————————————————————————————————————————————————————————————————————————————————————————</p>
+<body>
+    <script type="importmap"> {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.183.2/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.2/examples/jsm/"
+        }
+    }
+    </script>
 
-    <main class="grid">
-        <!-- Raymarching Card -->
-        <a class="card" href="projects/basic-raymarching/index.html">
-            <div class="card-preview">
-                <img src="projects/basic-raymarching/preview.png" alt="placeholder" onerror="this.style.display='none'">
-            </div>
-            <div class="card-info">
-                <h2>Basic Raymarching</h2>
-                <span class="tag">Raymarching</span> <span class="tag">Three.js</span> 
-            </div>
-        </a>
-
-        <!-- Fractal Card -->
-        <a class="card" href="projects/fractal/index.html">
-            <div class="card-preview">
-                <!-- <img src="projects/fractal_preview.png" alt="placeholder" onerror="this.style.display='none'"> -->
-            </div>
-            <div class="card-info">
-                <h2>Fractal-ing it</h2>
-                <span class="tag">Raymarching</span> 
-
-            </div>
-        </a>
-
-    </main>
-
-    <h1>other stuff</h1>
-    <p>————————————————————————————————————————————————————————————————————————————————————————</p>
-    <main class="grid">
-        <!-- Testing Card -->
-        <a class="card" href="testing/index.html">
-            <div class="card-preview">
-                <!-- <img src="projects/testing_shader_preview.png" alt="placeholder" onerror="this.style.display='none'"> -->
-            </div>
-            <div class="card-info">
-                <h2>Testing</h2>
-                <span class="tag">Testing</span> 
-
-            </div>
-        </a>
-
-        <!-- Example Card -->
-        <a class="card" href="projects/rm-visualizer/index.html">
-            <div class="card-preview">
-                <!-- <img src="projects/example_preview.png" alt="placeholder" onerror="this.style.display='none'"> -->
-            </div>
-            <div class="card-info">
-                <h2>Raymarching Visualizer</h2>
-                <span class="tag">Demo</span> 
-
-            </div>
-        </a>
-    </main>
-    <h1>resources</h1>
-    <p>————————————————————————————————————————————————————————————————————————————————————————</p>
-    <main class="grid">
-        <a class="card" href="https://iquilezles.org" target="_blank">
-            <div class="card-preview">
-                <img src="https://yt3.googleusercontent.com/ytc/AIdro_nbBSgh2qB22frEqrk4oAIMGAprXtifce1atwcAmLPZkQ=s900-c-k-c0x00ffffff-no-rj" 
-                style="width: 250px; height: 250px;" 
-                alt="placeholder" onerror="this.style.display='none'">
-            </div>
-            <div class = "card-info">
-                <h2>Inigo Quilez's Website</h2>
-                <span class="tag">Testing</span> 
-            </div>
-        </a>
-    </main>
-    
-    <script src="script.js"></script>
-    <script src="background.js"></script>
+    <script type="module" src="home.js"></script>
 </body>
 </html>
