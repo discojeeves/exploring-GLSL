@@ -5,6 +5,28 @@ import { Text }                     from 'troika-three-text'
 // import GUI                     from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
 // import { plane, ReflectorForSSRPass }               from 'three/addons/Addons.js';
 
+// ─── Class ────────────────────────────────────────────────────────────────────
+class Card extends three.Mesh {
+    constructor(geometry, material) {
+        super(geometry, material);
+        
+        this.currentX = 0;
+        this.currentY = 0;
+    }
+
+    updateTilt(targetX, targetY, easingSpeed, rotLerpThreshold) {
+        if (Math.abs(targetX - this.currentX) >= rotLerpThreshold) {
+            this.currentX += (targetX - this.currentX) * easingSpeed; 
+            this.rotation.x = -three.MathUtils.degToRad(this.currentX);
+        }
+        if (Math.abs(targetY - this.currentY) >= rotLerpThreshold) {
+            this.currentY += (targetY - this.currentY) * easingSpeed; 
+            this.rotation.y = three.MathUtils.degToRad(this.currentY);
+        }
+    }
+
+}
+
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 
@@ -25,16 +47,6 @@ function setupCamera() {
 function setupControls(camera, renderer) {
     const orbit = new OrbitControls(camera, renderer.domElement);
     orbit.enableDamping = true;
-
-    function resetCamera() {
-        orbit.enableDamping = false;
-        orbit.update();
-        orbit.reset();
-        orbit.enableDamping = true;
-        orbit.enableZoom = false;
-        setTimeout(() => { orbit.enableZoom = true; }, 500);
-    }
-
     return { orbit };
 }
 // ─── Scene ────────────────────────────────────────────────────────────────────
@@ -55,8 +67,7 @@ function setupScene(renderer) {
 
     const cardAMat = new three.MeshPhysicalMaterial({ map: previewTexture, roughness: 0.5, metalness: 0.2, side: three.DoubleSide });
     const cardAGeom = new three.PlaneGeometry(6, 4);
-    const cardA = new three.Mesh(cardAGeom, cardAMat);
-    cardA.name = "cardA";
+    const cardA = new Card(cardAGeom, cardAMat);
 
     cardA.position.set(0, 0, 0);
     scene.add(cardA);
@@ -64,15 +75,16 @@ function setupScene(renderer) {
     const light = new three.DirectionalLight(0xffffff, 1);
     light.position.set(-5, 10, 8);
     scene.add(light);
+
+    const cardArray = [cardA];
     
-    return { scene, backgroundColor };
+    return { scene, backgroundColor, cardArray };
 }
 
 
-function setupListeners(scene) {
+function setupListeners() {
     const mouse = new three.Vector2();
     const raycaster = new three.Raycaster();
-    const cardA = scene.getObjectByName("cardA");
     
     window.addEventListener('mousemove', (e) => {
         mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -84,75 +96,39 @@ function setupListeners(scene) {
 }
 
 
-
-
 // ─── Render loop ──────────────────────────────────────────────────────────────
 
-function startRenderLoop(renderer, scene, camera, controls, listenerReturn) {
+function startRenderLoop(renderer, sceneReturn, camera, controls, listenerReturn) {
     const { orbit } = controls;
     const { mouse, raycaster } = listenerReturn;
-    const cardA = scene.getObjectByName("cardA");
-        const cardGhost = cardA.clone();
-    let currentX = 0;
-    let currentY = 0;
-    let logged = 0;
+    const {scene, backgroundColor, cardArray} = sceneReturn;
+    const focusCard = cardArray[0];
+    //keep intersection point static so card rotates like I want :)
+    const focusGhost = focusCard.clone();
 
-    // const clock     = new three.Clock();
-    // const startTime = performance.now();
-
+    const easingSpeed = 0.08;
+    const rotLerpThreshold = 0.01; 
+    const maxAngleDeg = 17.5;
 
     function render() {
         requestAnimationFrame(render);
+        orbit.update(); 
 
-        orbit.update();
         raycaster.setFromCamera(mouse, camera);
+        const intersect = raycaster.intersectObject(focusGhost);
 
-        const intersect = raycaster.intersectObject(cardGhost);
+        //if intersecting, store X,Y coords of intersection (with 0,0 at the center of face)
+        const interX = intersect.length > 0 ? intersect[0].uv.x * 2 - 1: null;
+        const interY = intersect.length > 0 ? intersect[0].uv.y * 2 - 1: null;
 
-        // if (logged <= 10) {console.log(intersect); console.log(intersect.length == 0); logged += 1;}
+        //if not intersecting, target angle is back to 0
+        const targetX = intersect.length !== 0 ? maxAngleDeg * interY : 0;
+        const targetY = intersect.length !== 0 ? maxAngleDeg * interX : 0;
 
+        focusCard.updateTilt(targetX, targetY, easingSpeed, rotLerpThreshold);
 
-        if (intersect.length !== 0) { 
+        
 
-
-            const interX = intersect[0].uv.x * 2 - 1;
-            const interY = intersect[0].uv.y * 2 - 1;
-
-            const maxAngle = 15;
-            const targetY  = maxAngle * interX;
-            const targetX = maxAngle * interY;
-            
-            //LEFT-RIGHT ROTATION
-            if (Math.abs(targetY - currentY) >= 0.01) {
-                currentY += ((targetY - currentY) * 0.05);
-                const radY = three.MathUtils.degToRad(currentY);
-
-                cardA.rotation.y = radY;
-            }
-            //UP-DOWN ROTATION
-            if (Math.abs(targetX - currentX) >= 0.01) {
-                currentX += ((targetX - currentX) * 0.05);
-                const radX = three.MathUtils.degToRad(currentX);
-                cardA.rotation.x = -radX;
-            }
-        }
-        //RESET ROTATION
-        if (intersect.length == 0) {
-
-            //LEFT-RIGHT RESET
-            if (Math.abs(0 - currentY) >= 0.01) {
-                currentY += ((0 - currentY) * 0.05);
-                const radY = three.MathUtils.degToRad(currentY);
-                cardA.rotation.y = radY;
-            }
-            //UP-DOWN RESET
-            if (Math.abs(0 - currentX) >= 0.01) {
-                currentX += ((0 - currentX) * 0.05);
-                const radX = three.MathUtils.degToRad(currentX);
-                cardA.rotation.x = -radX;
-            }
-            
-        }
         renderer.render(scene, camera);
     }
 
@@ -164,9 +140,9 @@ function startRenderLoop(renderer, scene, camera, controls, listenerReturn) {
 const renderer                   = setupRenderer();
 const camera                     = setupCamera();
 const controls                   = setupControls(camera, renderer);
-const { scene, backgroundColor } = setupScene(renderer);
-const listenerReturn             = setupListeners(scene);
+const sceneReturn                = setupScene(renderer);
+const listenerReturn             = setupListeners();
 
 
-startRenderLoop(renderer, scene, camera, controls, listenerReturn);
+startRenderLoop(renderer, sceneReturn, camera, controls, listenerReturn);
 
