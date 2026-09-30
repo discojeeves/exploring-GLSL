@@ -26,43 +26,6 @@ function setupControls(camera, renderer) {
     const orbit = new OrbitControls(camera, renderer.domElement);
     orbit.enableDamping = true;
 
-    const fp = new PointerLockControls(camera, document.body);
-    const params = { moveSpeed: 5.0 };
-
-    let isFirstPerson = false;
-
-    fp.addEventListener('unlock', () => {
-        isFirstPerson = false;
-        orbit.enabled = true;
-    });
-
-    const keys = { w: false, a: false, s: false, d: false, e: false, q: false };
-
-    window.addEventListener('keydown', (e) => {
-        if (e.key.toLowerCase() === 'c') {
-            isFirstPerson = !isFirstPerson;
-            orbit.enabled = !isFirstPerson;
-            if (isFirstPerson) fp.lock(); else fp.unlock();
-        }
-        if (e.key === 'h' || e.key === 'H') resetCamera();
-
-        if (e.code === 'KeyW') keys.w = true;
-        if (e.code === 'KeyA') keys.a = true;
-        if (e.code === 'KeyS') keys.s = true;
-        if (e.code === 'KeyD') keys.d = true;
-        if (e.code === 'KeyE') keys.e = true;
-        if (e.code === 'KeyQ') keys.q = true;
-    });
-
-    window.addEventListener('keyup', (e) => {
-        if (e.code === 'KeyW') keys.w = false;
-        if (e.code === 'KeyA') keys.a = false;
-        if (e.code === 'KeyS') keys.s = false;
-        if (e.code === 'KeyD') keys.d = false;
-        if (e.code === 'KeyE') keys.e = false;
-        if (e.code === 'KeyQ') keys.q = false;
-    });
-
     function resetCamera() {
         orbit.enableDamping = false;
         orbit.update();
@@ -72,7 +35,7 @@ function setupControls(camera, renderer) {
         setTimeout(() => { orbit.enableZoom = true; }, 500);
     }
 
-    return { orbit, fp, params, keys, isFirstPerson: () => isFirstPerson };
+    return { orbit };
 }
 // ─── Scene ────────────────────────────────────────────────────────────────────
 
@@ -90,48 +53,107 @@ function setupScene(renderer) {
 
     const previewTexture = setupTextures();
 
-    const cardMat = new three.MeshPhysicalMaterial({ map: previewTexture, roughness: 0.5, metalness: 0.2, side: three.DoubleSide });
-    const cardGeom = new three.PlaneGeometry(6, 4);
-    const card = new three.Mesh(cardGeom, cardMat);
+    const cardAMat = new three.MeshPhysicalMaterial({ map: previewTexture, roughness: 0.5, metalness: 0.2, side: three.DoubleSide });
+    const cardAGeom = new three.PlaneGeometry(6, 4);
+    const cardA = new three.Mesh(cardAGeom, cardAMat);
+    cardA.name = "cardA";
 
-    card.position.set(0, 0, 0);
-    scene.add(card);
+    cardA.position.set(0, 0, 0);
+    scene.add(cardA);
 
     const light = new three.DirectionalLight(0xffffff, 1);
     light.position.set(-5, 10, 8);
     scene.add(light);
-
+    
     return { scene, backgroundColor };
 }
 
 
+function setupListeners(scene) {
+    const mouse = new three.Vector2();
+    const raycaster = new three.Raycaster();
+    const cardA = scene.getObjectByName("cardA");
+    
+    window.addEventListener('mousemove', (e) => {
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+    
+
+    return { mouse, raycaster };
+}
 
 
 
 
 // ─── Render loop ──────────────────────────────────────────────────────────────
 
-function startRenderLoop(renderer, scene, camera, controls) {
-    const { orbit, fp, params, keys, isFirstPerson } = controls;
-    const clock     = new three.Clock();
-    const startTime = performance.now();
+function startRenderLoop(renderer, scene, camera, controls, listenerReturn) {
+    const { orbit } = controls;
+    const { mouse, raycaster } = listenerReturn;
+    const cardA = scene.getObjectByName("cardA");
+        const cardGhost = cardA.clone();
+    let currentX = 0;
+    let currentY = 0;
+    let logged = 0;
+
+    // const clock     = new three.Clock();
+    // const startTime = performance.now();
+
 
     function render() {
         requestAnimationFrame(render);
-        const delta = clock.getDelta();
-        if (isFirstPerson() && fp.isLocked) {
-            if (keys.w) fp.moveForward( params.moveSpeed * delta);
-            if (keys.s) fp.moveForward(-params.moveSpeed * delta);
-            if (keys.d) fp.moveRight(   params.moveSpeed * delta);
-            if (keys.a) fp.moveRight(  -params.moveSpeed * delta);
-            if (keys.e) camera.position.y += params.moveSpeed * delta;
-            if (keys.q) camera.position.y -= params.moveSpeed * delta;
-        } else {
-            orbit.update();
+
+        orbit.update();
+        raycaster.setFromCamera(mouse, camera);
+
+        const intersect = raycaster.intersectObject(cardGhost);
+
+        // if (logged <= 10) {console.log(intersect); console.log(intersect.length == 0); logged += 1;}
+
+
+        if (intersect.length !== 0) { 
+
+
+            const interX = intersect[0].uv.x * 2 - 1;
+            const interY = intersect[0].uv.y * 2 - 1;
+
+            const maxAngle = 15;
+            const targetY  = maxAngle * interX;
+            const targetX = maxAngle * interY;
+            
+            //LEFT-RIGHT ROTATION
+            if (Math.abs(targetY - currentY) >= 0.01) {
+                currentY += ((targetY - currentY) * 0.05);
+                const radY = three.MathUtils.degToRad(currentY);
+
+                cardA.rotation.y = radY;
+            }
+            //UP-DOWN ROTATION
+            if (Math.abs(targetX - currentX) >= 0.01) {
+                currentX += ((targetX - currentX) * 0.05);
+                const radX = three.MathUtils.degToRad(currentX);
+                cardA.rotation.x = -radX;
+            }
         }
+        //RESET ROTATION
+        if (intersect.length == 0) {
 
+            //LEFT-RIGHT RESET
+            if (Math.abs(0 - currentY) >= 0.01) {
+                currentY += ((0 - currentY) * 0.05);
+                const radY = three.MathUtils.degToRad(currentY);
+                cardA.rotation.y = radY;
+            }
+            //UP-DOWN RESET
+            if (Math.abs(0 - currentX) >= 0.01) {
+                currentX += ((0 - currentX) * 0.05);
+                const radX = three.MathUtils.degToRad(currentX);
+                cardA.rotation.x = -radX;
+            }
+            
+        }
         renderer.render(scene, camera);
-
     }
 
     render();
@@ -143,7 +165,8 @@ const renderer                   = setupRenderer();
 const camera                     = setupCamera();
 const controls                   = setupControls(camera, renderer);
 const { scene, backgroundColor } = setupScene(renderer);
+const listenerReturn             = setupListeners(scene);
 
-startRenderLoop(renderer, scene, camera, controls);
 
+startRenderLoop(renderer, scene, camera, controls, listenerReturn);
 
