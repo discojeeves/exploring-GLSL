@@ -3,3 +3,92 @@
     margin: 0;
     padding: 0;
 }
+html {
+    overflow: hidden;
+}
+
+
+.edge-glow {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none; 
+    z-index: 9999;
+
+
+    --left-glow: 0;
+    --right-glow: 0;
+
+
+    background: 
+        linear-gradient(to right, rgba(200, 200, 200, var(--left-glow)), transparent 100px),
+        linear-gradient(to left, rgba(255, 255, 255, var(--right-glow)), transparent 100px);
+
+    transition: background 0.1s ease-out; 
+}
+
+
+/*
+
+.arrow {
+    position: absolute;
+
+    opacity: 0.2;
+    visibility: visible;
+
+    top: 50%;
+    transform: translateY(-50%);
+
+    z-index: 999;
+    cursor: default;
+
+    transition: opacity 0.5s ease;
+    padding: 20px;
+    color: white;
+    border-radius: 8px;
+}
+
+.arrow-left {
+    left: 0;
+}
+
+.arrow-right {
+    right: 0;
+}
+
+.trigger-zone-left:hover .arrow-left {
+    opacity: 0.8;
+}
+
+.trigger-zone-right:hover .arrow-right {
+    opacity: 0.8;
+  }
+
+
+.trigger-zone-left {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 200px;         
+  height: 100vh;      
+  background: transparent; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trigger-zone-right {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 200px;        
+    height: 100vh;        
+    background: transparent; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+*/

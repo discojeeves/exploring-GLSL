@@ -30,6 +30,30 @@ class Card extends three.Mesh {
 
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
+//CSS LOGIC//
+const edgeEl = document.querySelector('.edge-glow');
+const distThresh = 300;
+
+window.addEventListener('mousemove', (e) => {
+    const { clientX: x, clientY: y } = e;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    
+    const distLeft = x;
+    const distRight = w - x;
+
+    const glowIntensity = (dist) => {
+        if (dist > distThresh) return 0;
+        //normalize val from 0 -> 0.5 by div by 600 (2*thresh) 
+        const result = (Math.abs(dist - distThresh)) / 600;
+
+        return result;
+    }
+
+    edgeEl.style.setProperty('--left-glow', glowIntensity(distLeft));
+    edgeEl.style.setProperty('--right-glow', glowIntensity(distRight));
+});
+
 
 function setupRenderer() {
     const renderer = new three.WebGLRenderer({ antialias: true });
@@ -61,7 +85,7 @@ function setupListeners(sceneReturn) {
         mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
     });
 
-    
+
 
     window.addEventListener('click',(e) => {
         raycaster.setFromCamera(mouse, camera);
