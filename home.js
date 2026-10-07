@@ -46,14 +46,12 @@ window.addEventListener('mousemove', (e) => {
         if (dist > distThresh) return 0;
         //normalize val from 0 -> 0.5 by div by 600 (2*thresh) 
         const result = (Math.abs(dist - distThresh)) / 600;
-
         return result;
     }
-
     edgeEl.style.setProperty('--left-glow', glowIntensity(distLeft));
     edgeEl.style.setProperty('--right-glow', glowIntensity(distRight));
 });
-
+/////////////
 
 function setupRenderer() {
     const renderer = new three.WebGLRenderer({ antialias: true });
@@ -79,14 +77,15 @@ function setupListeners(sceneReturn) {
     const mouse = new three.Vector2();
     const raycaster = new three.Raycaster();
     const {scene, backgroundColor, cardArray} = sceneReturn;
-    
+    let cardIndex = 0;
+
+    //MOUSE POSITION
     window.addEventListener('mousemove', (e) => {
         mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
     });
 
-
-
+    //LINK LOGIC
     window.addEventListener('click',(e) => {
         raycaster.setFromCamera(mouse, camera);
         const clickIntersect = raycaster.intersectObject(cardArray[0].ghost);
@@ -96,7 +95,23 @@ function setupListeners(sceneReturn) {
         }
     });
 
-    return { mouse, raycaster };
+    //CYCLE L/R
+    const cycleL = document.getElementById("leftEdge");
+    const cycleR = document.getElementById("rightEdge");
+
+
+    //left
+    cycleL.addEventListener('click', (e) => {
+        cardIndex = (cardIndex - 1 + cardArray.length) % cardArray.length;
+        return cardIndex;
+    });
+
+    //right
+    cycleR.addEventListener('click', (e) => {
+        cardIndex = (cardIndex + 1) % cardArray.length;
+    });
+
+    return { mouse, raycaster, getIndex: () => cardIndex };
 }
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
@@ -145,9 +160,8 @@ function setupScene(renderer) {
 
 function startRenderLoop(renderer, sceneReturn, camera, controls, listenerReturn) {
     const { orbit } = controls;
-    const { mouse, raycaster } = listenerReturn;
     const {scene, backgroundColor, cardArray} = sceneReturn;
-    const focusCard = cardArray[0];
+    const { mouse, raycaster, getIndex } = listenerReturn;
 
     const easingSpeed = 0.08;
     const rotLerpThreshold = 0.01; 
@@ -156,6 +170,8 @@ function startRenderLoop(renderer, sceneReturn, camera, controls, listenerReturn
     function render() {
         requestAnimationFrame(render);
         orbit.update(); 
+        const focusCard = cardArray[getIndex()];
+
 
         raycaster.setFromCamera(mouse, camera);
         const intersect = raycaster.intersectObject(focusCard.ghost);

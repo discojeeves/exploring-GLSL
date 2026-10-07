@@ -7,7 +7,6 @@ html {
     overflow: hidden;
 }
 
-
 .edge-glow {
     position: fixed;
     top: 0;
@@ -28,6 +27,23 @@ html {
 
     transition: background 0.1s ease-out; 
 }
+
+
+.clickything {
+    position: absolute;
+    top: 0;
+    width: 100px;
+    height: 100vh;
+}
+
+.left {
+    left: 0;
+}
+
+.right {
+    right: 0;
+}
+
 
 
 /*
