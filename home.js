@@ -7,8 +7,10 @@ import { Text }                     from 'troika-three-text'
 
 // ─── Class ────────────────────────────────────────────────────────────────────
 class Card extends three.Mesh {
-    constructor(geometry, material) {
+    constructor(geometry, material, name) {
         super(geometry, material);
+        this.name = name;
+
         this.ghost    = new three.Mesh(geometry, material);
         this.currentX = 0;
         this.currentY = 0;
@@ -23,6 +25,12 @@ class Card extends three.Mesh {
         if (Math.abs(targetY - this.currentY) >= rotLerpThreshold) {
             this.currentY += (targetY - this.currentY) * easingSpeed; 
             this.rotation.y = three.MathUtils.degToRad(this.currentY);
+        }
+    }
+    syncGhost(){
+        if (!this.position.equals(this.ghost.position))  {
+            this.ghost.position.copy(this.position);
+            this.ghost.updateMatrixWorld();
         }
     }
 
@@ -58,6 +66,7 @@ function setupRenderer() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     document.body.appendChild(renderer.domElement);
+
     return renderer;
 }
 
@@ -78,6 +87,12 @@ function setupListeners(sceneReturn) {
     const raycaster = new three.Raycaster();
     const {scene, backgroundColor, cardArray} = sceneReturn;
     let cardIndex = 0;
+    //RESIZE LISTENER
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 
     //MOUSE POSITION
     window.addEventListener('mousemove', (e) => {
@@ -99,16 +114,14 @@ function setupListeners(sceneReturn) {
     const cycleL = document.getElementById("leftEdge");
     const cycleR = document.getElementById("rightEdge");
 
-
     //left
     cycleL.addEventListener('click', (e) => {
-        cardIndex = (cardIndex - 1 + cardArray.length) % cardArray.length;
+        cardIndex = (cardIndex + 1) % cardArray.length;
         return cardIndex;
     });
-
     //right
     cycleR.addEventListener('click', (e) => {
-        cardIndex = (cardIndex + 1) % cardArray.length;
+        cardIndex = (cardIndex - 1 + cardArray.length) % cardArray.length;
     });
 
     return { mouse, raycaster, getIndex: () => cardIndex };
@@ -118,25 +131,30 @@ function setupListeners(sceneReturn) {
 
 function setupTextures() {
     const textureLoader = new three.TextureLoader();
-    const previewTexture = textureLoader.load('projects/basic-raymarching/preview.png');
-    
-    return previewTexture;
+    const rmPrev = textureLoader.load('projects/basic-raymarching/preview.png');
+    // const fracPrev = textureLoader.load('');
+    return { rmPrev };
 }
 
 function initCards() {
-    const previewTexture = setupTextures();
+    const { rmPrev } = setupTextures();
 
-    const cardAGeom = new three.PlaneGeometry(6, 4);
-    const cardAMat = new three.MeshPhysicalMaterial({ map: previewTexture, roughness: 0.5, metalness: 0.2, side: three.DoubleSide });
-    const cardA = new Card(cardAGeom, cardAMat);
-    cardA.position.set(0, 0, 0);
+    const rmCardGeo = new three.PlaneGeometry(6, 4);
+    const rmCardMat = new three.MeshPhysicalMaterial({ map: rmPrev, roughness: 0.5, metalness: 0.2, side: three.DoubleSide });
+    const rmCard = new Card(rmCardGeo, rmCardMat, "rm");
+    rmCard.position.set(0, 0, 0);
 
-    const cardBGeom = new three.PlaneGeometry(6, 4);
-    const cardBMat = new three.MeshPhysicalMaterial( { color: new three.Color(1, 0, 0.5), roughness: 0.1, metalness: 0.8, side: three.DoubleSide } );
-    const cardB = new Card(cardBGeom, cardBMat);
-    cardB.position.set(-8, 0, 0);
+    const fracCardGeo = new three.PlaneGeometry(6, 4);
+    const fracCardMat = new three.MeshPhysicalMaterial({ roughness: 0.1, metalness: 0.8, side: three.DoubleSide });
+    const fracCard = new Card(fracCardGeo, fracCardMat, "frac");
+    fracCard.position.set(-8, 0, 0);
 
-    const cardArray = [cardA, cardB];
+    const thirdCardGeo = new three.PlaneGeometry(6, 4);
+    const thirdCardMat = new three.MeshPhysicalMaterial({ roughness: 0.1, metalness: 0.8, side: three.DoubleSide });
+    const thirdCard = new Card(thirdCardGeo, thirdCardMat, "third");
+    thirdCard.position.set(8, 0, 0);
+
+    const cardArray = [rmCard, fracCard, thirdCard];
     return cardArray;
 }
 
@@ -149,8 +167,16 @@ function setupScene(renderer) {
     scene.add(light);
 
     const cardArray = initCards();
-    cardArray.forEach(element => {
-        scene.add(element);
+    cardArray.forEach(card => {
+        card.syncGhost();
+        scene.add(card);
+        // debug
+        //see ghosts
+        // scene.add(element.ghost);
+        // console.log(`${element.name}: (${element.position.x}, ${element.position.y}, ${element.position.z})`);
+        // console.log("ghosts:");
+        // console.log(`${element.name}: (${element.ghost.position.x}, ${element.ghost.position.y}, ${element.ghost.position.z})`);
+
     });
 
     return { scene, backgroundColor, cardArray };
@@ -163,7 +189,7 @@ function startRenderLoop(renderer, sceneReturn, camera, controls, listenerReturn
     const {scene, backgroundColor, cardArray} = sceneReturn;
     const { mouse, raycaster, getIndex } = listenerReturn;
 
-    const easingSpeed = 0.08;
+    const easingSpeed = 0.1;
     const rotLerpThreshold = 0.01; 
     const maxAngleDeg = 8;
 
@@ -171,8 +197,6 @@ function startRenderLoop(renderer, sceneReturn, camera, controls, listenerReturn
         requestAnimationFrame(render);
         orbit.update(); 
         const focusCard = cardArray[getIndex()];
-
-
         raycaster.setFromCamera(mouse, camera);
         const intersect = raycaster.intersectObject(focusCard.ghost);
 
@@ -184,9 +208,10 @@ function startRenderLoop(renderer, sceneReturn, camera, controls, listenerReturn
         const targetX = intersect.length !== 0 ? maxAngleDeg * interY : 0;
         const targetY = intersect.length !== 0 ? maxAngleDeg * interX : 0;
 
+        cardArray.forEach(card => {
+            // card.updateTilt(targetX, targetY, easingSpeed, rotLerpThreshold) SOMETHING LIKE THIS
+        })
         focusCard.updateTilt(targetX, targetY, easingSpeed, rotLerpThreshold);
-
-
 
         renderer.render(scene, camera);
     }
