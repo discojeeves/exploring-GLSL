@@ -5,26 +5,35 @@ import { Text }                     from 'troika-three-text'
 // import GUI                     from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
 // import { plane, ReflectorForSSRPass }               from 'three/addons/Addons.js';
 
-// ─── Class ────────────────────────────────────────────────────────────────────
+// ─── Classes ────────────────────────────────────────────────────────────────────
 class Card extends three.Mesh {
+    static #currIndex = 0;
+    rotX = 0;
+    rotY = 0;
+    link = 'https://en.wikipedia.org/wiki/Software_bug'; //default link for debug
+
     constructor(geometry, material, name) {
         super(geometry, material);
+        this.ghost = new three.Mesh(geometry, material);
         this.name = name;
+    }
 
-        this.ghost    = new three.Mesh(geometry, material);
-        this.currentX = 0;
-        this.currentY = 0;
-        this.link     = 'projects/basic-raymarching/index.html';
+    static get currentIndex() {
+        return Card.#currIndex;
+    }
+
+    static set currentIndex(value) {
+        Card.#currIndex = value;
     }
 
     updateTilt(targetX, targetY, easingSpeed, rotLerpThreshold) {
-        if (Math.abs(targetX - this.currentX) >= rotLerpThreshold) {
-            this.currentX += (targetX - this.currentX) * easingSpeed; 
-            this.rotation.x = -three.MathUtils.degToRad(this.currentX);
+        if (Math.abs(targetX - this.rotX) >= rotLerpThreshold) {
+            this.rotX += (targetX - this.rotX) * easingSpeed; 
+            this.rotation.x = -three.MathUtils.degToRad(this.rotX);
         }
-        if (Math.abs(targetY - this.currentY) >= rotLerpThreshold) {
-            this.currentY += (targetY - this.currentY) * easingSpeed; 
-            this.rotation.y = three.MathUtils.degToRad(this.currentY);
+        if (Math.abs(targetY - this.rotY) >= rotLerpThreshold) {
+            this.rotY += (targetY - this.rotY) * easingSpeed; 
+            this.rotation.y = three.MathUtils.degToRad(this.rotY);
         }
     }
     syncGhost(){
@@ -33,6 +42,10 @@ class Card extends three.Mesh {
             this.ghost.updateMatrixWorld();
         }
     }
+
+    // updateTrackPos(curve, currentIndex, length, tOffset) {
+
+    // }
 
 }
 
@@ -59,54 +72,63 @@ window.addEventListener('mousemove', (e) => {
     edgeEl.style.setProperty('--left-glow', glowIntensity(distLeft));
     edgeEl.style.setProperty('--right-glow', glowIntensity(distRight));
 });
-/////////////
+//—————————//
 
-function setupRenderer() {
-    const renderer = new three.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    document.body.appendChild(renderer.domElement);
-
-    return renderer;
+function createState() {
+    return {
+        renderer: null,
+        camera: null,
+        orbit: null,
+        scene: null,
+        backgroundColor: null,
+        cardArr: [],
+        mouse: new three.Vector2(),
+        raycaster: new three.Raycaster(),
+    };
+}
+//basics//
+function initRenderer(state) {
+    state.renderer = new three.WebGLRenderer({ antialias: true });
+    state.renderer.setSize(window.innerWidth, window.innerHeight);
+    state.renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(state.renderer.domElement);
 }
 
-function setupCamera() {
-    const camera = new three.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 5;
-    return camera;
+function initCamera(state) {
+    state.camera = new three.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    state.camera.position.z = 5;
 }
 
-function setupControls(camera, renderer) {
-    const orbit = new OrbitControls(camera, renderer.domElement);
-    orbit.enableDamping = true;
-    return { orbit };
-}
+// function initControls(camera, renderer) {
+//     const orbit = new OrbitControls(camera, renderer.domElement);
+//     orbit.enableDamping = true;
+//     return { orbit };
+// }
+//——————//
 
-function setupListeners(sceneReturn) {
-    const mouse = new three.Vector2();
-    const raycaster = new three.Raycaster();
-    const {scene, backgroundColor, cardArray} = sceneReturn;
-    let cardIndex = 0;
+
+function initListeners(state) {
+    
     //RESIZE LISTENER
     window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        state.camera.aspect = window.innerWidth / window.innerHeight;
+        state.camera.updateProjectionMatrix();
+        state.renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
     //MOUSE POSITION
     window.addEventListener('mousemove', (e) => {
-        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        state.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        state.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
     });
 
     //LINK LOGIC
     window.addEventListener('click',(e) => {
-        raycaster.setFromCamera(mouse, camera);
-        const clickIntersect = raycaster.intersectObject(cardArray[0].ghost);
+        state.raycaster.setFromCamera(state.mouse, state.camera);
+        const clickIntersect = state.raycaster.intersectObject(state.cardArr[Card.currentIndex].ghost);
         if (clickIntersect.length !== 0) {
-            window.open(cardArray[0].link, '_blank');
-            // console.log('on!');
+            window.open(state.cardArr[Card.currentIndex].link, '_blank');
         }
     });
 
@@ -116,20 +138,17 @@ function setupListeners(sceneReturn) {
 
     //left
     cycleL.addEventListener('click', (e) => {
-        cardIndex = (cardIndex + 1) % cardArray.length;
-        return cardIndex;
+        Card.currentIndex =(Card.currentIndex + 1) % state.cardArr.length;
     });
     //right
     cycleR.addEventListener('click', (e) => {
-        cardIndex = (cardIndex - 1 + cardArray.length) % cardArray.length;
+        Card.currentIndex = (Card.currentIndex - 1 + state.cardArr.length) % state.cardArr.length;
     });
-
-    return { mouse, raycaster, getIndex: () => cardIndex };
 }
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
 
-function setupTextures() {
+function initTextures() {
     const textureLoader = new three.TextureLoader();
     const rmPrev = textureLoader.load('projects/basic-raymarching/preview.png');
     // const fracPrev = textureLoader.load('');
@@ -137,7 +156,7 @@ function setupTextures() {
 }
 
 function initCards() {
-    const { rmPrev } = setupTextures();
+    const { rmPrev } = initTextures();
 
     const rmCardGeo = new three.PlaneGeometry(6, 4);
     const rmCardMat = new three.MeshPhysicalMaterial({ map: rmPrev, roughness: 0.5, metalness: 0.2, side: three.DoubleSide });
@@ -154,22 +173,30 @@ function initCards() {
     const thirdCard = new Card(thirdCardGeo, thirdCardMat, "third");
     thirdCard.position.set(8, 0, 0);
 
-    const cardArray = [rmCard, fracCard, thirdCard];
-    return cardArray;
+    const cardArr = [rmCard, fracCard, thirdCard];
+    return cardArr;
 }
 
-function setupScene(renderer) {
-    const scene = new three.Scene();
-    const backgroundColor = new three.Color(0.01, 0.01, 0.01);
-    renderer.setClearColor(backgroundColor, 1);
+function initScene(state) {
+    state.scene = new three.Scene();
+    state.backgroundColor = new three.Color(0.01, 0.01, 0.01);
+    state.renderer.setClearColor(state.backgroundColor, 1);
+
     const light = new three.DirectionalLight(0xffffff, 1);
     light.position.set(-5, 10, 8);
-    scene.add(light);
 
-    const cardArray = initCards();
-    cardArray.forEach(card => {
+    state.scene.add(light);
+
+    // const creationPoints = [];
+    // const curve = new three.CatmullRomCurve3(creationPoints);
+
+    state.cardArr = initCards();
+    const N = state.cardArr.length;
+
+    state.cardArr.forEach(card => {
         card.syncGhost();
-        scene.add(card);
+        state.scene.add(card);
+
         // debug
         //see ghosts
         // scene.add(element.ghost);
@@ -179,41 +206,42 @@ function setupScene(renderer) {
 
     });
 
-    return { scene, backgroundColor, cardArray };
 }
 
 // ─── Render loop ──────────────────────────────────────────────────────────────
 
-function startRenderLoop(renderer, sceneReturn, camera, controls, listenerReturn) {
-    const { orbit } = controls;
-    const {scene, backgroundColor, cardArray} = sceneReturn;
-    const { mouse, raycaster, getIndex } = listenerReturn;
-
+function initRenderLoop(state) {
     const easingSpeed = 0.1;
     const rotLerpThreshold = 0.01; 
     const maxAngleDeg = 8;
 
     function render() {
         requestAnimationFrame(render);
-        orbit.update(); 
-        const focusCard = cardArray[getIndex()];
-        raycaster.setFromCamera(mouse, camera);
-        const intersect = raycaster.intersectObject(focusCard.ghost);
+        const focusCard = state.cardArr[Card.currentIndex];
+
+        state.raycaster.setFromCamera(state.mouse, state.camera);
+        const intersect = state.raycaster.intersectObject(focusCard.ghost);
+        const isHit = (intersect.length > 0);
 
         //if intersecting, store X,Y coords of intersection (with 0,0 at the center of face)
-        const interX = intersect.length > 0 ? intersect[0].uv.x * 2 - 1: null;
-        const interY = intersect.length > 0 ? intersect[0].uv.y * 2 - 1: null;
+        
+        const interX = isHit ? intersect[0].uv.x * 2 - 1: null;
+        const interY = isHit ? intersect[0].uv.y * 2 - 1: null;
 
-        //if not intersecting, target angle is back to 0
-        const targetX = intersect.length !== 0 ? maxAngleDeg * interY : 0;
-        const targetY = intersect.length !== 0 ? maxAngleDeg * interX : 0;
+        //calc target angle to rotate by if hit, else target is 0
+        const targetX = isHit ? maxAngleDeg * interY : 0;
+        const targetY = isHit ? maxAngleDeg * interX : 0;
 
-        cardArray.forEach(card => {
-            // card.updateTilt(targetX, targetY, easingSpeed, rotLerpThreshold) SOMETHING LIKE THIS
-        })
+        
+        state.cardArr.forEach((card, i) => {
+            //if card is not focus card, ease back to 0 rot
+            if (i != Card.currentIndex) card.updateTilt(0, 0, easingSpeed, rotLerpThreshold);
+        });
+
+
         focusCard.updateTilt(targetX, targetY, easingSpeed, rotLerpThreshold);
 
-        renderer.render(scene, camera);
+        state.renderer.render(state.scene, state.camera);
     }
 
     render();
@@ -221,12 +249,11 @@ function startRenderLoop(renderer, sceneReturn, camera, controls, listenerReturn
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-const renderer                   = setupRenderer();
-const camera                     = setupCamera();
-const controls                   = setupControls(camera, renderer);
-const sceneReturn                = setupScene(renderer);
-const listenerReturn             = setupListeners(sceneReturn);
+const state = createState();
+initRenderer(state);
+initCamera(state);
+initScene(state);
+initListeners(state);
 
-
-startRenderLoop(renderer, sceneReturn, camera, controls, listenerReturn);
+initRenderLoop(state);
 
