@@ -18,35 +18,68 @@ const TILT_THRESH = 0.01;
 const MAX_TILT = 8;
 
 // ─── Classes ────────────────────────────────────────────────────────────────────
-class Card extends three.Mesh {
-    tiltX = 0;
-    tiltY = 0;
-    link = 'https://en.wikipedia.org/wiki/Software_bug'; //default link for debug
+// class Card extends three.Mesh {
+//     tiltX = 0;
+//     tiltY = 0;
+//     link = 'https://en.wikipedia.org/wiki/Software_bug'; //default link for debug
+
+//     constructor(geometry, material, name) {
+//         super(geometry, material);
+//         this.name = name;
+
+//         this.ghost = new three.Mesh(geometry);
+//     }
+
+//     updateTilt(targetX, targetY) {
+//         if (Math.abs(targetX - this.tiltX) >= TILT_THRESH) {
+//             this.tiltX += (targetX - this.tiltX) * TILT_EASE;
+//             this.rotation.x = -three.MathUtils.degToRad(this.tiltX);
+//         }
+//         if (Math.abs(targetY - this.tiltY) >= TILT_THRESH) {
+//             this.tiltY += (targetY - this.tiltY) * TILT_EASE;
+//             this.rotation.y = three.MathUtils.degToRad(this.tiltY);
+//         }
+//     }
+//     syncGhost() {
+//         if (!this.position.equals(this.ghost.position)) {
+//             this.ghost.position.copy(this.position);
+//             this.ghost.updateMatrixWorld();
+//         }
+//     }
+// }
+/*
+Card is a container with two children
+1. Visible mesh
+2. Hit mesh (the ghost)
+
+Move and rotate the CONTAINER for LAYOUT
+Apply tilt to the VISIBLE MESH
+*/
+
+class Card extends three.Group {
+    vTiltX = 0;
+    vTiltY = 0;
+    link = 'https://en.wikipedia.org/wiki/Software_bug'; //PLACEHOLDER
 
     constructor(geometry, material, name) {
-        super(geometry, material);
+        super();
         this.name = name;
-
-        this.ghost = new three.Mesh(geometry);
+        this.vis = new three.Mesh(geometry, material);
+        this.hit = new three.Mesh(geometry);
+        this.hit.visible = false;
+        this.add(this.vis, this.hit);
     }
-
     updateTilt(targetX, targetY) {
-        if (Math.abs(targetX - this.tiltX) >= TILT_THRESH) {
-            this.tiltX += (targetX - this.tiltX) * TILT_EASE;
-            this.rotation.x = -three.MathUtils.degToRad(this.tiltX);
-        }
-        if (Math.abs(targetY - this.tiltY) >= TILT_THRESH) {
-            this.tiltY += (targetY - this.tiltY) * TILT_EASE;
-            this.rotation.y = three.MathUtils.degToRad(this.tiltY);
-        }
-    }
-    syncGhost() {
-        if (!this.position.equals(this.ghost.position)) {
-            this.ghost.position.copy(this.position);
-            this.ghost.updateMatrixWorld();
-        }
+        this.vTiltX += (targetX - this.vTiltX) * TILT_EASE;
+        this.vTiltY += (targetY - this.vTiltY) * TILT_EASE;
+        this.vis.rotation.set(
+            -three.MathUtils.degToRad(this.vTiltX),
+            three.MathUtils.degToRad(this.vTiltY),
+            this.rotation.z
+        )
     }
 }
+
 // ─── edge highlighting ────────────────────────────────────────────────────────
 // —— want to replace this with better graphics eventually, too flat 
 const edgeEl = document.querySelector('.edge-glow');
@@ -124,7 +157,7 @@ function initListeners(state) {
     //LINK LOGIC
     window.addEventListener('click',(e) => {
         state.raycaster.setFromCamera(state.mouse, state.camera);
-        const clickIntersect = state.raycaster.intersectObject(state.cardArr[state.currIndex].ghost);
+        const clickIntersect = state.raycaster.intersectObject(state.cardArr[state.currIndex].hit);
         if (clickIntersect.length !== 0) {
             window.open(state.cardArr[state.currIndex].link, '_blank');
         }
@@ -160,8 +193,8 @@ function initCards(state) {
             proj.texture,
             // onLoad
             (loadedTexture) => {
-                console.log('Texture loaded successfully!');
                 if (loadedTexture.image && loadedTexture.image.width > 0) {
+                    console.log('Texture loaded successfully!');
                     loadedTexture.colorSpace = three.SRGBColorSpace;
                     mat.map = loadedTexture;
                     mat.needsUpdate = true;
@@ -172,11 +205,15 @@ function initCards(state) {
             (err) => {
                 console.warn(`Had trouble loading the texture for card "${proj.title}", defaulting to fallback.`);
                 const canvas = Object.assign(document.createElement('canvas'), { width: 512, height: 512 });
-                const ctx = Object.assign(canvas.getContext('2d'), {
-                    fillStyle: '#FBFAF5',
-                    font: 'bold 48px sans-serif',
-                    textAlign: 'center',
-                });
+                const ctx = canvas.getContext('2d');
+
+                ctx.fillStyle = '#111111';
+                ctx.fillRect(0, 0, 512, 512);  
+
+                ctx.fillStyle = '#FBFAF5';
+                ctx.font = 'bold 48px sans-serif';
+                ctx.textAlign = 'center'; 
+                
                 ctx.fillText(proj.title, 256, 256);
                 const fallbackTexture = new three.CanvasTexture(canvas);
                 fallbackTexture.colorSpace = three.SRGBColorSpace;
@@ -184,7 +221,6 @@ function initCards(state) {
                 mat.needsUpdate = true;
             }
         );
-
         state.cardArr[i] = new Card(geo, mat, proj.title);
     });
 }
@@ -195,12 +231,10 @@ function initScene(state) {
     const light = new three.DirectionalLight(0xffffff, 1);
     light.position.set(-5, 10, 8);
     state.scene.add(light);
-
     initCards(state);
 
     state.cardArr.forEach((card, i) => {
         card.position.x = (10 * i) - 10;
-        card.syncGhost();
         state.scene.add(card);
         // debug
         //see ghosts
@@ -225,7 +259,7 @@ function grid(state) {
 function raycast(state) {
     const focusCard = state.cardArr[state.currIndex];
     state.raycaster.setFromCamera(state.mouse, state.camera);
-    return state.raycaster.intersectObject(focusCard.ghost);
+    return state.raycaster.intersectObject(focusCard.hit);
 }
 
 // ─── Render loop ──────────────────────────────────────────────────────────────
