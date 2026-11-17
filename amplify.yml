@@ -2,11 +2,7 @@ version: 1
 frontend:
   phases:
     build:
-      commands:
-        - npm ci
-        - npm run build
-        # the site loads three.js from a CDN, so node_modules is only needed for compiling
-        - rm -rf node_modules
+      commands: []
   artifacts:
     baseDirectory: /
     files:

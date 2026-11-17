@@ -1,7 +1,3 @@
 *.DS_Store
 .DS_Store
 /node_modules
-
-# compiled from home.ts
-/home.js
-/home.js.map
